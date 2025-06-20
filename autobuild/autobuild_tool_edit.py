@@ -160,6 +160,7 @@ class Build(_config):
                        'options':   listify_str(options),
                        'arguments': listify_str(arguments)}
         build_config_desc = self.create_or_update_build_config_desc(name, platform, default=default, build=new_command)
+        print(f"[DEBUG] Created or updated build configuration: {build_config_desc}")
 
     def delete(self, name='', platform='', **kwargs):
         """
@@ -183,6 +184,7 @@ class Configure(_config):
                        'options': listify_str(options),
                        'arguments': listify_str(arguments)}
         build_config_desc = self.create_or_update_build_config_desc(name, platform, default=default, configure=new_command)
+        print(f"[DEBUG] Created or updated configure configuration: {build_config_desc}")
 
     def delete(self, name='', platform='', **kwargs):
         """

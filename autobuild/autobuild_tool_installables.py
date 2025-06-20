@@ -239,7 +239,8 @@ def print_installable(config, installable_name):
     """
     Print the named installable (or all if name is None)
     """
-    pretty_print = lambda p: pprint.pprint(configfile.compact_to_dict(p), sys.stdout, 1, 80)
+    def pretty_print(p):
+        pprint.pprint(configfile.compact_to_dict(p), sys.stdout, 1, 80)
     if installable_name is None:
         pretty_print(config.installables)
     else:

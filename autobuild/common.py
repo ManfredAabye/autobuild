@@ -16,13 +16,13 @@ import platform
 import pprint
 import subprocess
 import sys
-import tarfile
 import tempfile
 from collections import OrderedDict
 from functools import partial
 from typing import Callable
 
 from autobuild.version import AUTOBUILD_VERSION_STRING
+print(f"[DEBUG] AUTOBUILD_VERSION_STRING: {AUTOBUILD_VERSION_STRING}")
 
 logger = logging.getLogger(__name__)
 

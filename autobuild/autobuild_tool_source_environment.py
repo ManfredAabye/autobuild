@@ -125,7 +125,7 @@ def load_vsvars(vsver):
             installs = json.loads(raw)
         except FileNotFoundError:
             raise SourceEnvError('AUTOBUILD_VSVER={} unsupported, '
-                                 'is Visual Studio {} installed? (%s not found)'
+                                 'is Visual Studio {} installed? ({} not found)'
                                  .format(vsver, vsver, _VSWHERE_PATH))
         except subprocess.CalledProcessError as err:
             # Don't forget that vswhere reports error information on stdout.
@@ -133,6 +133,7 @@ def load_vsvars(vsver):
                                  .format(vsver, err, err.output))
         except ValueError as err:
             raise SourceEnvError("Can't parse vswhere output:\n" + raw)
+            print(f"[DEBUG] ValueError: {err}")
 
         if not installs:
             # vswhere terminated with 0, yet its output is empty.

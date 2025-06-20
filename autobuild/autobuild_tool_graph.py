@@ -201,8 +201,8 @@ class AutobuildTool(autobuild_base.AutobuildBase):
                     logger.debug(" graph adding package %s" % name)
                     # can't use the dict .get to supply an empty string default for these,
                     # because the value in the dict is None.
-                    pkg_version = pkg['package_description']['version'] if pkg['package_description']['version'] else "";
-                    pkg_build_id = pkg['build_id'] if pkg['build_id'] else "";
+                    pkg_version = pkg['package_description']['version'] if pkg['package_description']['version'] else ""
+                    pkg_build_id = pkg['build_id'] if pkg['build_id'] else ""
                     # create the new node with name, version, and build id
                     pkg_node = pydot.Node(name, label="%s\\n%s\\n%s" % (name, pkg_version, pkg_build_id))
                     if 'dirty' in pkg and (pkg['dirty'] == 'True' or pkg['dirty'] is True):
@@ -214,6 +214,7 @@ class AutobuildTool(autobuild_base.AutobuildBase):
                         for dep_pkg in pkg['dependencies'].values():
                             dep_name = dep_pkg['package_description']['name']
                             dep_node = add_depends(graph, dep_pkg)
+                            print(f"[DEBUG] Adding dependency from {dep_node.get_name()} to {dep_name}")
                             logger.debug(" graph adding dependency %s -> %s" % (dep_name, name))
                             edge = pydot.Edge(dep_name, name)
                             if 'dirty' in dep_pkg and (dep_pkg['dirty'] == 'True' or dep_pkg['dirty'] is True):

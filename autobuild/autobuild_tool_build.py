@@ -12,7 +12,7 @@ from autobuild import autobuild_base, common, configfile
 from autobuild.autobuild_tool_configure import _configure_a_configuration
 from autobuild.autobuild_tool_source_environment import get_enriched_environment
 from autobuild.build_id import establish_build_id
-from autobuild.common import AutobuildError, is_env_enabled
+from autobuild.common import AutobuildError
 
 logger = logging.getLogger('autobuild.build')
 

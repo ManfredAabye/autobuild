@@ -117,6 +117,7 @@ class AutobuildTool(autobuild_base.AutobuildBase):
         if not build_dirs:
             build_dirs = [config.get_build_directory(None, platform)]
         is_clean = True
+        print(f"[DEBUG] Using is_clean: {is_clean}")
         for build_dir in build_dirs:
             package(config, build_dir, platform, archive_filename=args.archive_filename,
                     archive_format=args.archive_format, clean_only=args.clean_only, results_file=args.results_file, dry_run=args.dry_run)

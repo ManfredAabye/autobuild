@@ -98,7 +98,7 @@ class Executable(common.Serialized):
     def __str__(self, options=[]):
         try:
             return ' '.join(self._get_all_arguments(options))
-        except:
+        except Exception:
             return 'INVALID EXECUTABLE!'
 
     def get_arguments(self):

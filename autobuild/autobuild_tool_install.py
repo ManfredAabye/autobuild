@@ -914,6 +914,7 @@ class AutobuildTool(autobuild_base.AutobuildBase):
             # Re-fetch the build configuration so we have its expansions.
             build_configuration = bconfig.get_build_configuration(build_configuration.name, platform_name=platform)
             build_directory = bconfig.get_build_directory(build_configuration, platform_name=platform)
+            print(f"[DEBUG] Using build directory: {build_directory}")
 
             # write packages into 'packages' subdir of build directory
             install_dirs = \

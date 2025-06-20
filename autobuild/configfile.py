@@ -442,8 +442,8 @@ class MetadataDescription(common.Serialized):
 
 
     def __load(self, parsed_llsd):
-        if (not 'version' in parsed_llsd) or (parsed_llsd['version'] != self.version) \
-                or (not 'type' in parsed_llsd) or (parsed_llsd['type'] != 'metadata'):
+        if ('version' not in parsed_llsd) or (parsed_llsd['version'] != self.version) \
+                or ('type' not in parsed_llsd) or (parsed_llsd['type'] != 'metadata'):
             raise ConfigurationError("missing or incompatible metadata %s" %
                                      pprint.pformat(parsed_llsd))
         else:
