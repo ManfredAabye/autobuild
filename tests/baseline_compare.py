@@ -45,7 +45,9 @@ class AutobuildBaselineCompare:
         fails.
         """
         self.failed = False
-        self.tmp_file = tempfile.NamedTemporaryFile(prefix="test_output_", delete=False).name
+        self.tmp_file = tempfile.NamedTemporaryFile(
+            prefix="test_output_", delete=False
+        ).name
         return self.tmp_file
 
     def diff_tmp_file_against_baseline(self, baseline):
@@ -55,19 +57,22 @@ class AutobuildBaselineCompare:
         """
         output = self.tmp_file
         baseline = os.path.join(sys.path[0], baseline)
-        with open(output, 'rb') as f:
+        with open(output, "rb") as f:
             output_lines = [line.rstrip() for line in f]
-        with open(baseline, 'rb') as f:
+        with open(baseline, "rb") as f:
             baseline_lines = [line.rstrip() for line in f]
-        udiff = difflib.unified_diff(baseline_lines, output_lines, fromfile=baseline,
-                                     tofile=output, lineterm="")
+        udiff = difflib.unified_diff(
+            baseline_lines, output_lines, fromfile=baseline, tofile=output, lineterm=""
+        )
         error = []
         for line in udiff:
             error.append(line)
         if error:
             self.failed = True
-            self.fail("Output does not match baseline.\nBaseline: %s\nOutput: %s\nDiff:\n%s" %
-                      (baseline, output, "\n".join(error)))
+            self.fail(
+                "Output does not match baseline.\nBaseline: %s\nOutput: %s\nDiff:\n%s"
+                % (baseline, output, "\n".join(error))
+            )
 
     def cleanup_tmp_file(self):
         """
@@ -75,4 +80,3 @@ class AutobuildBaselineCompare:
         """
         if not self.failed and self.tmp_file and os.path.exists(self.tmp_file):
             os.remove(self.tmp_file)
-

@@ -4,13 +4,16 @@ from tests.basetest import BaseTest
 
 captured_stdout = ""
 
+
 class EarlyExitException(Exception):
     pass
+
 
 class CatchStdOut:
     def write(self, text):
         global captured_stdout
         captured_stdout += text
+
 
 class TestOptions(BaseTest):
     def setUp(self):

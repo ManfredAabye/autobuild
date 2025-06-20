@@ -22,7 +22,7 @@ class InvalidSemverTests(TestCase):
                 f.write("+1")
             cmd("git", "add", "file")
             version = get_version(repo)
-            self.assertRegex(version, fr"^1\.1\.1q\-dev0\.g[a-z0-9]{{7}}.d{date()}$")
+            self.assertRegex(version, rf"^1\.1\.1q\-dev0\.g[a-z0-9]{{7}}.d{date()}$")
 
 
 @needs_git
@@ -99,7 +99,7 @@ class GitTests(TestCase):
             f.write("+1")
         cmd("git", "add", "file")
         version = get_version(self.repo)
-        self.assertRegex(version, fr"^1\.0\.1\-dev0\.g[a-z0-9]{{7}}.d{date()}$")
+        self.assertRegex(version, rf"^1\.0\.1\-dev0\.g[a-z0-9]{{7}}.d{date()}$")
 
     def test_distance_dirty(self):
         # Add distance
@@ -112,4 +112,4 @@ class GitTests(TestCase):
             f.write("+2")
         cmd("git", "add", "file")
         version = get_version(self.repo)
-        self.assertRegex(version, fr"^1\.0\.1\-dev1\.g[a-z0-9]{{7}}.d{date()}$")
+        self.assertRegex(version, rf"^1\.0\.1\-dev1\.g[a-z0-9]{{7}}.d{date()}$")

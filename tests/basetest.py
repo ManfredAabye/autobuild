@@ -49,12 +49,15 @@ class BaseTest(unittest.TestCase):
         through.
         """
         command = (self.autobuild_bin,) + args
-        return subprocess.check_output(command, universal_newlines=True, **kwds).rstrip()
+        return subprocess.check_output(
+            command, universal_newlines=True, **kwds
+        ).rstrip()
 
     # On Windows, need some retry logic wrapped around removing files (SIGHH)
     if not sys.platform.startswith("win"):
         remove = os.remove
     else:
+
         def remove(self, path):
             start = time.time()
             tries = 0
@@ -66,18 +69,23 @@ class BaseTest(unittest.TestCase):
                     if err.errno == errno.ENOENT:
                         return
                     if err.errno != errno.EACCES:
-                        print("*** Unknown %s (errno %s): %s: %s" % \
-                              (err.__class__.__name__, err.errno, err, path))
+                        print(
+                            "*** Unknown %s (errno %s): %s: %s"
+                            % (err.__class__.__name__, err.errno, err, path)
+                        )
                         sys.stdout.flush()
                         raise
                     if (time.time() - start) > 10:
-                        print("*** remove(%r) timed out after %s retries" % (path, tries))
+                        print(
+                            "*** remove(%r) timed out after %s retries" % (path, tries)
+                        )
                         sys.stdout.flush()
                         raise
                     time.sleep(1)
 
     def tearDown(self):
         pass
+
 
 def clean_file(pathname):
     try:
@@ -87,6 +95,7 @@ def clean_file(pathname):
             print("*** Can't remove %s: %s" % (pathname, err), file=sys.stderr)
             # But no exception, we're still trying to clean up.
 
+
 def clean_dir(pathname):
     try:
         shutil.rmtree(pathname)
@@ -95,19 +104,27 @@ def clean_dir(pathname):
         if err.errno != errno.ENOENT:
             print("*** Can't remove %s: %s" % (pathname, err), file=sys.stderr)
 
+
 def assert_in(item, container):
     assert item in container, "%r not in %r" % (item, container)
+
 
 def assert_not_in(item, container):
     assert item not in container, "%r should not be in %r" % (item, container)
 
+
 def assert_found_in(regex, container):
     pattern = re.compile(regex)
-    assert any(pattern.search(item) for item in container), "search failed for %r in %r" % (regex, container)
+    assert any(pattern.search(item) for item in container), (
+        "search failed for %r in %r" % (regex, container)
+    )
+
 
 def assert_not_found_in(regex, container):
     pattern = re.compile(regex)
-    assert not any(pattern.search(item) for item in container), "search found %r in %r" % (regex, container)
+    assert not any(pattern.search(item) for item in container), (
+        "search found %r in %r" % (regex, container)
+    )
 
 
 @contextmanager
@@ -145,13 +162,17 @@ def exc(exceptionslist, pattern=None, without=None, message=None):
         # did the caller need the exception message to match a pattern?
         if pattern:
             if not re.search(pattern, str(err)):
-                raise AssertionError("exception %s does not match '%s': '%s'" %
-                                     (err.__class__.__name__, pattern, err))
+                raise AssertionError(
+                    "exception %s does not match '%s': '%s'"
+                    % (err.__class__.__name__, pattern, err)
+                )
         # or not to match a pattern?
         if without:
             if re.search(without, str(err)):
-                raise AssertionError("exception %s should not match '%s': '%s'" %
-                                     (err.__class__.__name__, without, err))
+                raise AssertionError(
+                    "exception %s should not match '%s': '%s'"
+                    % (err.__class__.__name__, without, err)
+                )
     else:
         # with block did not raise any of the expected exceptions: FAIL
         try:
@@ -162,10 +183,11 @@ def exc(exceptionslist, pattern=None, without=None, message=None):
             exceptionnames = exceptionslist.__name__
         else:
             # tuple of exception classes: format their names
-            exceptionnames = "any of (%s)" % \
-                ','.join(ex.__name__ for ex in exceptionslist)
-        raise AssertionError(message or
-                             ("with block did not raise " + exceptionnames))
+            exceptionnames = "any of (%s)" % ",".join(
+                ex.__name__ for ex in exceptionslist
+            )
+        raise AssertionError(message or ("with block did not raise " + exceptionnames))
+
 
 def ExpectError(errfrag, expectation, exception=common.AutobuildError):
     """
@@ -192,7 +214,7 @@ def capture_stdout_buffer():
     """
     Capture sys.stdout.buffer
     """
-    _ = StringIO() # Not needed for any tests yet
+    _ = StringIO()  # Not needed for any tests yet
     buf = BytesIO()
     with redirect_stdout(_):
         sys.stdout.buffer = buf
@@ -212,6 +234,7 @@ class CaptureStd(object):
     Note that this does NOT capture output emitted by a child process -- only
     data written to sys.stdout.
     """
+
     def __init__(self, attr):
         self.attr = attr
 
@@ -224,9 +247,11 @@ class CaptureStd(object):
     def __exit__(self, *exc_info):
         setattr(sys, self.attr, self.save)
 
+
 class CaptureStdout(CaptureStd):
     def __init__(self):
         super(CaptureStdout, self).__init__("stdout")
+
 
 class CaptureStderr(CaptureStd):
     def __init__(self):
@@ -299,5 +324,9 @@ def git_repo(initial_tag="v1.0.0"):
 
 
 needs_git = pytest.mark.skipif(not has_cmd("git"), reason="git not present on system")
-needs_nix = pytest.mark.skipif(not has_cmd("which", "bash"), reason="needs unix-like environment")
-needs_cygwin = pytest.mark.skipif(not has_cmd("cygpath", "-h"), reason="needs windows environment")
+needs_nix = pytest.mark.skipif(
+    not has_cmd("which", "bash"), reason="needs unix-like environment"
+)
+needs_cygwin = pytest.mark.skipif(
+    not has_cmd("cygpath", "-h"), reason="needs windows environment"
+)

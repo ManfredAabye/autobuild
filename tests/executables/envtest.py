@@ -9,24 +9,27 @@ import sys
 # module. Instead, it is executed by test_build.TestEnvironment.test_env(), by
 # specifying it as the build command in the configuration.
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Verify that we can execute whatever the AUTOBUILD env var points to.
     # This is not the same as os.access($AUTOBUILD, os.X_OK): $AUTOBUILD
     # should be a command we can execute, but (at least on Windows) the
     # corresponding executable file may be $AUTOBUILD.cmd or $AUTOBUILD.exe or
     # some such.
     command = [os.environ["AUTOBUILD"], "--version"]
-    autobuild = subprocess.Popen(command,
-                                 stdout=subprocess.PIPE,
-                                 # Use command shell to perform that search.
-                                 shell=sys.platform.startswith("win"),
-                                 universal_newlines=True)
+    autobuild = subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        # Use command shell to perform that search.
+        shell=sys.platform.startswith("win"),
+        universal_newlines=True,
+    )
     stdout, stderr = autobuild.communicate()
     rc = autobuild.wait()
     try:
-        assert rc == 0, "%s => %s" % (' '.join(command), rc)
-        assert stdout.startswith("autobuild "), \
-               "does not look like autobuild --version output:\n" + stdout
+        assert rc == 0, "%s => %s" % (" ".join(command), rc)
+        assert stdout.startswith("autobuild "), (
+            "does not look like autobuild --version output:\n" + stdout
+        )
     except AssertionError:
         print("***Failed command: %s" % command, file=sys.stderr)
         raise

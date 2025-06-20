@@ -22,6 +22,7 @@ from tests.executables import echo, envtest, noop
 # ****************************************************************************
 logger = logging.getLogger("autobuild.test_build")
 
+
 def local_build(*args):
     """
     Some of our tests use BaseTest.autobuild() to run the build command as a
@@ -29,26 +30,30 @@ def local_build(*args):
     """
     AutobuildTool().main(list(args))
 
+
 class LocalBase(BaseTest, AutobuildBaselineCompare):
     def setUp(self):
         BaseTest.setUp(self)
         # We intend to ask our child autobuild command to run a script located
         # in this directory. Make sure this directory is on child autobuild's
         # PATH so we find it.
-        os.environ["PATH"] = os.pathsep.join([os.path.abspath(os.path.dirname(__file__)),
-                                              os.environ["PATH"]])
+        os.environ["PATH"] = os.pathsep.join(
+            [os.path.abspath(os.path.dirname(__file__)), os.environ["PATH"]]
+        )
         # Create and return a config file appropriate for this test class.
         self.tmp_file = self.get_tmp_file()
-        self.tmp_build_dir=tempfile.mkdtemp(prefix=os.path.dirname(self.tmp_file)+"/build-")
+        self.tmp_build_dir = tempfile.mkdtemp(
+            prefix=os.path.dirname(self.tmp_file) + "/build-"
+        )
         self.config = self.get_config()
         self.config.save()
 
     def get_config(self):
         config = configfile.ConfigurationDescription(self.tmp_file)
-        package = configfile.PackageDescription('test')
+        package = configfile.PackageDescription("test")
         package.license = "LGPL"
-        package.license_file="LICENSES/file"
-        package.copyright="copy right"
+        package.license_file = "LICENSES/file"
+        package.copyright = "copy right"
         platform = configfile.PlatformDescription()
         platform.build_directory = self.tmp_build_dir
         package.version_file = os.path.join(self.tmp_build_dir, "version.txt")
@@ -61,8 +66,8 @@ class LocalBase(BaseTest, AutobuildBaselineCompare):
         # it, which thoroughly confuses the Python interpreter.
         build_configuration.build = noop
         build_configuration.default = True
-        build_configuration.name = 'Release'
-        platform.configurations['Release'] = build_configuration
+        build_configuration.name = "Release"
+        platform.configurations["Release"] = build_configuration
         package.platforms[common.get_current_platform()] = platform
         config.package_description = package
         return config
@@ -80,49 +85,69 @@ class LocalBase(BaseTest, AutobuildBaselineCompare):
         if platform:
             platdata = platforms[platform]
         else:
-            assert len(platforms) == 1, \
-                   "read_metadata(no platform) ambiguous: " \
-                   "pass one of %s" % ', '.join(list(platforms.keys()))
+            assert len(platforms) == 1, (
+                "read_metadata(no platform) ambiguous: "
+                "pass one of %s" % ", ".join(list(platforms.keys()))
+            )
             _, platdata = platforms.popitem()
-        return MetadataDescription(os.path.join(platdata.build_directory,
-                                                PACKAGE_METADATA_FILE))
+        return MetadataDescription(
+            os.path.join(platdata.build_directory, PACKAGE_METADATA_FILE)
+        )
+
 
 class TestBuild(LocalBase):
     def get_config(self):
         config = super(TestBuild, self).get_config()
-        #config.package_description.version = "0"
+        # config.package_description.version = "0"
         logger.debug("config: %s" % pprint.pformat(config))
         return config
 
     def test_autobuild_build_default(self):
-        self.autobuild('build', '--no-configure', '--config-file=' + self.tmp_file, '--id=123456')
-        self.autobuild('build', '--config-file=' + self.tmp_file, '--id=123456', '--', '--foo', '-b')
+        self.autobuild(
+            "build", "--no-configure", "--config-file=" + self.tmp_file, "--id=123456"
+        )
+        self.autobuild(
+            "build",
+            "--config-file=" + self.tmp_file,
+            "--id=123456",
+            "--",
+            "--foo",
+            "-b",
+        )
         metadata = self.read_metadata()
-        assert not metadata.package_description.version_file, \
-               "version_file erroneously propagated into metadata"
+        assert not metadata.package_description.version_file, (
+            "version_file erroneously propagated into metadata"
+        )
         self.assertEqual(metadata.package_description.version, "1.0")
 
     def test_autobuild_build_all(self):
-        self.autobuild('build', '--config-file=' + self.tmp_file, '--id=123456', '-a')
+        self.autobuild("build", "--config-file=" + self.tmp_file, "--id=123456", "-a")
 
     def test_autobuild_build_release(self):
-        self.autobuild('build', '--config-file=' + self.tmp_file, '-c', 'Release', '--id=123456')
+        self.autobuild(
+            "build", "--config-file=" + self.tmp_file, "-c", "Release", "--id=123456"
+        )
+
 
 class TestEnvironment(LocalBase):
     def get_config(self):
         config = super(TestEnvironment, self).get_config()
-        config.package_description.copyright="no copy"
+        config.package_description.copyright = "no copy"
         # Formally you might consider that noop.py is an "argument" rather
         # than an "option" -- but the way Executable is structured, if we pass
         # it as an "argument" then the "build" subcommand gets inserted before
         # it, which thoroughly confuses the Python interpreter.
-        config.package_description.platforms[common.get_current_platform()] \
-              .configurations["Release"].build = envtest
+        config.package_description.platforms[
+            common.get_current_platform()
+        ].configurations["Release"].build = envtest
         return config
 
     def test_env(self):
         # verify that the AUTOBUILD env var is set to point to something executable
-        self.autobuild('build', '--no-configure', '--config-file=' + self.tmp_file, '--id=123456')
+        self.autobuild(
+            "build", "--no-configure", "--config-file=" + self.tmp_file, "--id=123456"
+        )
+
 
 class TestMissingPackageNameCurrent(LocalBase):
     def get_config(self):
@@ -134,7 +159,8 @@ class TestMissingPackageNameCurrent(LocalBase):
         # Make sure the verbose 'new requirement' message is only produced
         # when the missing key is in fact version_file.
         with exc(BuildError, "name"):
-            local_build('build', '--config-file=' + self.tmp_file, '--id=123456')
+            local_build("build", "--config-file=" + self.tmp_file, "--id=123456")
+
 
 class TestMissingVersion(LocalBase):
     def get_config(self):
@@ -144,7 +170,8 @@ class TestMissingVersion(LocalBase):
 
     def test_autobuild_build(self):
         with exc(configfile.NoVersionFileKeyError):
-            build('build', '--config-file=' + self.tmp_file, '--id=123456')
+            build("build", "--config-file=" + self.tmp_file, "--id=123456")
+
 
 class TestAbsentVersionFile(LocalBase):
     def get_config(self):
@@ -155,7 +182,8 @@ class TestAbsentVersionFile(LocalBase):
 
     def test_autobuild_build(self):
         with exc(common.AutobuildError, "version_file"):
-            build('build', '--config-file=' + self.tmp_file, '--id=123456')
+            build("build", "--config-file=" + self.tmp_file, "--id=123456")
+
 
 class TestEmptyVersionFile(LocalBase):
     def get_config(self):
@@ -167,7 +195,8 @@ class TestEmptyVersionFile(LocalBase):
 
     def test_autobuild_build(self):
         with exc(common.AutobuildError, "version_file"):
-            build('build', '--config-file=' + self.tmp_file, '--id=123456')
+            build("build", "--config-file=" + self.tmp_file, "--id=123456")
+
 
 @needs_git
 class TestSCMVersion(LocalBase):
@@ -180,15 +209,23 @@ class TestSCMVersion(LocalBase):
             pass
         # create a git root and add a version tag
         cmd("git", "init", cwd=self.tmp_build_dir)
-        cmd("git", "remote", "add", "origin", "https://example.com/foo.git", cwd=self.tmp_build_dir)
+        cmd(
+            "git",
+            "remote",
+            "add",
+            "origin",
+            "https://example.com/foo.git",
+            cwd=self.tmp_build_dir,
+        )
         cmd("git", "add", "empty", cwd=self.tmp_build_dir)
         cmd("git", "commit", "-m", "initial", cwd=self.tmp_build_dir)
         cmd("git", "tag", "v5.0.0", cwd=self.tmp_build_dir)
         return config
 
     def test_autobuild_build(self):
-        local_build('build', '--config-file=' + self.tmp_file, '--id=123456')
+        local_build("build", "--config-file=" + self.tmp_file, "--id=123456")
         self.assertEqual(self.read_metadata().package_description.version, "5.0.0")
+
 
 @needs_git
 class TestVCSInfo(LocalBase):
@@ -200,22 +237,31 @@ class TestVCSInfo(LocalBase):
         # create a git root and add a version tag
         cmd("git", "init", cwd=self.tmp_build_dir)
         cmd("git", "checkout", "-b", "main", cwd=self.tmp_build_dir)
-        cmd("git", "remote", "add", "origin", "https://example.com/foo.git", cwd=self.tmp_build_dir)
+        cmd(
+            "git",
+            "remote",
+            "add",
+            "origin",
+            "https://example.com/foo.git",
+            cwd=self.tmp_build_dir,
+        )
         cmd("git", "add", "empty", cwd=self.tmp_build_dir)
         cmd("git", "commit", "-m", "initial", cwd=self.tmp_build_dir)
         return config
 
     def test_opt_in(self):
         with envvar("AUTOBUILD_VCS_INFO", "true"):
-            local_build('build', '--config-file=' + self.tmp_file, '--id=123456')
+            local_build("build", "--config-file=" + self.tmp_file, "--id=123456")
             pkg = self.read_metadata()
             self.assertEqual(pkg.package_description.vcs_branch, "main")
-            self.assertEqual(pkg.package_description.vcs_url, "https://example.com/foo.git")
+            self.assertEqual(
+                pkg.package_description.vcs_url, "https://example.com/foo.git"
+            )
             self.assertTrue(len(pkg.package_description.vcs_revision) > 7)
 
     def test_no_info(self):
         with envvar("AUTOBUILD_VCS_INFO", None):
-            local_build('build', '--config-file=' + self.tmp_file, '--id=123456')
+            local_build("build", "--config-file=" + self.tmp_file, "--id=123456")
             pkg = self.read_metadata()
             self.assertIsNone(pkg.package_description.vcs_branch)
             self.assertIsNone(pkg.package_description.vcs_url)
@@ -231,25 +277,31 @@ class TestVersionFileOddWhitespace(LocalBase):
         return config
 
     def test_autobuild_build(self):
-        local_build('build', '--config-file=' + self.tmp_file, '--id=123456')
+        local_build("build", "--config-file=" + self.tmp_file, "--id=123456")
         self.assertEqual(self.read_metadata().package_description.version, "2.3")
+
 
 class TestSubstitutions(LocalBase):
     def get_config(self):
         config = super(TestSubstitutions, self).get_config()
-        config.package_description.platforms[common.get_current_platform()] \
-              .configurations['Release'].build = echo("foo$AUTOBUILD_ADDRSIZE")
+        config.package_description.platforms[
+            common.get_current_platform()
+        ].configurations["Release"].build = echo("foo$AUTOBUILD_ADDRSIZE")
         return config
 
     def test_substitutions(self):
-        assert "foo32" in self.autobuild('build', '--config-file=' + self.tmp_file,
-                                        '-A', '32')
-        assert "foo64" in self.autobuild('build', '--config-file=' + self.tmp_file,
-                                        '-A', '64')
+        assert "foo32" in self.autobuild(
+            "build", "--config-file=" + self.tmp_file, "-A", "32"
+        )
+        assert "foo64" in self.autobuild(
+            "build", "--config-file=" + self.tmp_file, "-A", "64"
+        )
 
     def test_id(self):
-        self.config.package_description.platforms[common.get_current_platform()] \
-            .configurations['Release'].build = echo("foo$AUTOBUILD_BUILD_ID")
+        self.config.package_description.platforms[
+            common.get_current_platform()
+        ].configurations["Release"].build = echo("foo$AUTOBUILD_BUILD_ID")
         self.config.save()
-        assert "foo666" in self.autobuild('build', '--config-file=' + self.tmp_file,
-                                        '-i', '666')
+        assert "foo666" in self.autobuild(
+            "build", "--config-file=" + self.tmp_file, "-i", "666"
+        )

@@ -18,9 +18,10 @@ def test_register():
         # side effects
         assert len(update._updaters["1.1"]) == 2
 
+
 class TestUpdater(TestCase):
     def setUp(self):
-        self.save_confver  = update.AUTOBUILD_CONFIG_VERSION
+        self.save_confver = update.AUTOBUILD_CONFIG_VERSION
         self.save_updaters = update._updaters
 
         update.AUTOBUILD_CONFIG_VERSION = "1.4"
@@ -115,9 +116,15 @@ class TestUpdater(TestCase):
 
     def test_convert(self):
         # normal type registry
-        update._register("1.1", "1.2", lambda config: self.track_config(config, "to 1.2"))
-        update._register("1.2", "1.3", lambda config: self.track_config(config, "to 1.3"))
-        update._register("1.3", "1.4", lambda config: self.track_config(config, "to 1.4"))
+        update._register(
+            "1.1", "1.2", lambda config: self.track_config(config, "to 1.2")
+        )
+        update._register(
+            "1.2", "1.3", lambda config: self.track_config(config, "to 1.3")
+        )
+        update._register(
+            "1.3", "1.4", lambda config: self.track_config(config, "to 1.4")
+        )
 
         # config too old to even have a version key
         with exc(update.UpdateError):

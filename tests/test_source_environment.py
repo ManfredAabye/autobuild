@@ -10,7 +10,14 @@ import re
 from io import StringIO
 
 from autobuild import autobuild_tool_source_environment as atse
-from tests.basetest import BaseTest, needs_nix, needs_cygwin, exc, capture_stdout_buffer, envvar
+from tests.basetest import (
+    BaseTest,
+    needs_nix,
+    needs_cygwin,
+    exc,
+    capture_stdout_buffer,
+    envvar,
+)
 from tests.patch import patch
 
 
@@ -35,15 +42,19 @@ def assert_dict_subset(d, s):
             if keys:
                 keys.sort()
                 msg.extend((label, pformat(keys)))
+
+
 def assert_in(member, container):
     if member not in container:
         raise AssertionError(f"{member!r} not found in {container!r}")
     if member not in container:
         raise AssertionError(f"{member!r} not found in {container!r}")
 
+
 def assert_not_in(member, container):
     if member in container:
         raise AssertionError(f"{member!r} unexpectedly found in {container!r}")
+
 
 def assert_found_in(pattern, outputs):
     """Assert that the regex pattern is found in at least one of the outputs."""
@@ -52,12 +63,16 @@ def assert_found_in(pattern, outputs):
             return True
     raise AssertionError("Pattern not found: %r in outputs: %r" % (pattern, outputs))
 
+
 def assert_not_found_in(pattern, outputs):
     """Assert that the regex pattern is NOT found in any of the outputs."""
     for output in outputs if isinstance(outputs, (list, tuple)) else [outputs]:
         if re.search(pattern, output):
-            raise AssertionError("Pattern unexpectedly found: %r in outputs: %r" % (pattern, outputs))
+            raise AssertionError(
+                "Pattern unexpectedly found: %r in outputs: %r" % (pattern, outputs)
+            )
     return True
+
 
 def assert_found_assignment(key, value, output):
     # shorthand for a regex search
@@ -66,7 +81,8 @@ def assert_found_assignment(key, value, output):
     # expressed.
     # Set the MULTILINE flag so ^ and $ match internal line breaks.
     # Handle any level of indentation.
-    return assert_found_in(r'''(?m)^ *%s=['"]%s["']$''' % (key, value), [output])
+    return assert_found_in(r"""(?m)^ *%s=['"]%s["']$""" % (key, value), [output])
+
 
 # for direct calls into do_source_environment(), simulate what's produced by
 # argparse
@@ -88,7 +104,7 @@ class TestSourceEnvironment(BaseTest):
         self.removes = []
         for var in [
             "AUTOBUILD_VARIABLES_FILE",
-            ]:
+        ]:
             try:
                 self.restores[var] = os.environ[var]
             except KeyError:
@@ -123,16 +139,23 @@ class TestSourceEnvironment(BaseTest):
         passed 'args'), capturing and returning its stdout, stderr. It fails
         if the child process terminates with nonzero rc.
         """
-        autobuild = subprocess.Popen((self.autobuild_bin, "source_environment") + args,
-                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                     universal_newlines=True)
+        autobuild = subprocess.Popen(
+            (self.autobuild_bin, "source_environment") + args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+        )
         stdout, stderr = autobuild.communicate()
         rc = autobuild.wait()
-        assert rc == 0, "%s source_environment terminated with %s:\n%s" % \
-               (self.autobuild_bin, rc, stderr)
+        assert rc == 0, "%s source_environment terminated with %s:\n%s" % (
+            self.autobuild_bin,
+            rc,
+            stderr,
+        )
         return stdout.rstrip(), stderr.rstrip()
 
     if not sys.platform.startswith("win"):
+
         def source_env_and(self, args, commands):
             """
             This method runs a little bash script that runs autobuild
@@ -144,16 +167,26 @@ class TestSourceEnvironment(BaseTest):
             # rather than shell=True. It's because on Windows, shell=True gets us
             # the .bat processor rather than bash. We specifically want bash on
             # all platforms.
-            return subprocess.check_output(["bash", "-c", """\
+            return subprocess.check_output(
+                [
+                    "bash",
+                    "-c",
+                    """\
     eval "$('%s' source_environment %s)"
-    %s""" % (self.autobuild_bin,
-             ' '.join("'%s'" % arg for arg in args),
-             commands)], universal_newlines=True).rstrip()
+    %s"""
+                    % (
+                        self.autobuild_bin,
+                        " ".join("'%s'" % arg for arg in args),
+                        commands,
+                    ),
+                ],
+                universal_newlines=True,
+            ).rstrip()
 
         def shell_path(self, path):
             return path
 
-    else: # Then There's Windows
+    else:  # Then There's Windows
         # On Windows, running
         # bash -c 'eval "$(autobuild source_environment)" ...'
         # is unreasonably difficult. We've set things up so that
@@ -172,22 +205,28 @@ class TestSourceEnvironment(BaseTest):
             scriptname = os.path.join(self.tempdir, "source_env_and.sh")
             with open(scriptname, "w", newline="\n") as scriptf:
                 scriptf.write(srcenv)
-                scriptf.write('\n')
+                scriptf.write("\n")
                 scriptf.write(commands)
             try:
-                return subprocess.check_output([self.cygwin_bash(), "-c",
-                                                self.shell_path(scriptname)], universal_newlines=True).rstrip()
+                return subprocess.check_output(
+                    [self.cygwin_bash(), "-c", self.shell_path(scriptname)],
+                    universal_newlines=True,
+                ).rstrip()
             finally:
                 os.remove(scriptname)
 
         @staticmethod
         def cygwin_bash():
             """Get path to cygwin/mingw bash. This is necessary because some windows environments might also have WSL installed."""
-            return subprocess.check_output(["cygpath", "-w", "/usr/bin/bash"], universal_newlines=True).rstrip()
+            return subprocess.check_output(
+                ["cygpath", "-w", "/usr/bin/bash"], universal_newlines=True
+            ).rstrip()
 
         @staticmethod
         def shell_path(path):
-            return subprocess.check_output(["cygpath", "-u", path], universal_newlines=True).rstrip()
+            return subprocess.check_output(
+                ["cygpath", "-u", path], universal_newlines=True
+            ).rstrip()
 
     def read_variables(self, *args):
         """
@@ -202,12 +241,18 @@ class TestSourceEnvironment(BaseTest):
         # This means we can't use this function to distinguish between
         # exported and unexported variables -- but we'd much rather be able to
         # detect whether they're set.
-        vars = literal_eval(self.source_env_and(args, """\
+        vars = literal_eval(
+            self.source_env_and(
+                args,
+                """\
 for var in $(set | grep '^[^ ]' | cut -s -d= -f 1)
 do export $var
 done
 '%s' -c 'import os, pprint
-pprint.pprint(dict(os.environ))'""" % self.shell_path(sys.executable)))
+pprint.pprint(dict(os.environ))'"""
+                % self.shell_path(sys.executable),
+            )
+        )
         # filter out anything inherited from our own environment
         for var, value in os.environ.items():
             if value == vars.get(var):
@@ -215,20 +260,33 @@ pprint.pprint(dict(os.environ))'""" % self.shell_path(sys.executable)))
         return vars
 
     def test_env(self):
-        assert 'environment_template' in dir(atse)
+        assert "environment_template" in dir(atse)
 
     def test_remove_switch(self):
-        self.assertEqual(self.source_env_and([], """\
+        self.assertEqual(
+            self.source_env_and(
+                [],
+                """\
 switches='abc def ghi'
-remove_switch def $switches"""), "abc ghi")
+remove_switch def $switches""",
+            ),
+            "abc ghi",
+        )
 
     def test_replace_switch(self):
         # replace_switch makes no guarantees about the order in which the
         # switches are returned.
-        self.assertEqual(set(self.source_env_and([], """\
+        self.assertEqual(
+            set(
+                self.source_env_and(
+                    [],
+                    """\
 switches='abc def ghi'
-replace_switch def xyz $switches""").split()),
-                      set(["abc", "xyz", "ghi"]))
+replace_switch def xyz $switches""",
+                ).split()
+            ),
+            set(["abc", "xyz", "ghi"]),
+        )
 
     def test_no_arg_warning(self):
         # autobuild source_environment with no arg
@@ -305,7 +363,7 @@ replace_switch def xyz $switches""").split()),
         assert_found_assignment("LL_BUILD_DARWIN_RELEASE", "darwin release", stdout)
         assert_found_assignment("LL_BUILD_RELEASE", "darwin release", stdout)
         assert_found_assignment("SOMETHING_ELSE", "something else", stdout)
-        assert_not_found_in(r'^ *LL_BUILD=', stdout)
+        assert_not_found_in(r"^ *LL_BUILD=", stdout)
 
     def test_bad_platform_warning(self):
         # For autobuild_call(), capturing warning output isn't as
@@ -332,7 +390,7 @@ replace_switch def xyz $switches""").split()),
         assert_found_assignment("LL_BUILD_DARWIN_RELEASE", "darwin release", stdout)
         assert_found_assignment("LL_BUILD_RELEASE", "darwin release", stdout)
         assert_found_assignment("SOMETHING_ELSE", "something else", stdout)
-        assert_not_found_in(r'^ *LL_BUILD=', stdout)
+        assert_not_found_in(r"^ *LL_BUILD=", stdout)
 
         with patch(sys, "platform", "darwin"), capture_stdout_buffer() as outbuf:
             self.autobuild_call(self.find_data("darwin"), "Release")

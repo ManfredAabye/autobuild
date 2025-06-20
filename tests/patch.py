@@ -23,6 +23,7 @@ def patch(module, attribute, value):
         # 'saved' is prev value, so reset to 'saved' later
         def restore():
             setattr(module, attribute, saved)
+
     try:
         # set the desired module attribute
         setattr(module, attribute, value)

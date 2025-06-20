@@ -52,4 +52,6 @@ def test_establish_build_id():
         config = mock_config(os.path.join(dir, "autobuild.xml"))
         build_id = establish_build_id("50000", config)
         assert build_id == "50000"
-        assert os.environ.get("AUTOBUILD_BUILD_ID") == "50000", "Expected establish_build_id to set AUTOBUILD_BUILD_ID"
+        assert os.environ.get("AUTOBUILD_BUILD_ID") == "50000", (
+            "Expected establish_build_id to set AUTOBUILD_BUILD_ID"
+        )
