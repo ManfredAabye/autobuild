@@ -9,12 +9,21 @@ import urllib.request
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from string import Template
 from threading import Thread
+import unittest
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
 from autobuild import autobuild_tool_install, autobuild_tool_uninstall, common
 from autobuild.autobuild_tool_install import CredentialsNotFoundError
-from tests.basetest import *
+from tests.basetest import (
+    CaptureStdout,
+    clean_dir,
+    clean_file,
+    assert_in,
+    assert_not_in,
+    ExpectError,
+    envvar
+)
 
 # ****************************************************************************
 #   TODO
@@ -74,7 +83,7 @@ def query_manifest(options=None):
         # Output isn't empty: should be Python-parseable.
         try:
             sequence = eval(raw)
-        except Exception as err:
+        except Exception:
             logger.error("couldn't parse --export-manifest output:\n" + raw)
             raise
     logger.debug("--export-manifest output:\n" + raw)
@@ -216,7 +225,8 @@ class DownloadServer(SimpleHTTPRequestHandler):
         for word in words:
             drive, word = os.path.splitdrive(word)
             head, word = os.path.split(word)
-            if word in (os.curdir, os.pardir): continue
+            if word in (os.curdir, os.pardir):
+                continue
             path = os.path.join(path, word)
         return path
 

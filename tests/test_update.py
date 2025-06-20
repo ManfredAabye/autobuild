@@ -85,7 +85,7 @@ class TestUpdater(TestCase):
         update.AUTOBUILD_CONFIG_VERSION = "1.5"
 
         with exc(update.UpdateError):
-            triples = update._get_applicable_updaters("NAME", "1.1")
+            update._get_applicable_updaters("NAME", "1.1")
 
     def test_applicable_loop(self):
         update._register("1.1", "1.2", lambda config: config + ["to 1.2"])
@@ -93,7 +93,7 @@ class TestUpdater(TestCase):
         update._register("1.3", "1.1", lambda config: config + ["back to 1.1"])
 
         with exc(AssertionError, "loop"):
-            triples = update._get_applicable_updaters("NAME", "1.1")
+            update._get_applicable_updaters("NAME", "1.1")
 
     def test_applicable_stuck(self):
         # This test constructs a chain of updaters that could be resolved by a
@@ -105,7 +105,7 @@ class TestUpdater(TestCase):
         update._register("1.2", "1.4", lambda config: config + ["to 1.4"])
 
         with exc(update.UpdateError):
-            triples = update._get_applicable_updaters("NAME", "1.1")
+            update._get_applicable_updaters("NAME", "1.1")
 
     # helper for test_convert: conversion method that updates config["track"]
     @staticmethod

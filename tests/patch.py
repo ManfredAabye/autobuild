@@ -17,11 +17,12 @@ def patch(module, attribute, value):
         saved = getattr(module, attribute)
     except AttributeError:
         # doesn't exist, we're adding it, so delete it later
-        restore = lambda: delattr(module, attribute)
+        def restore():
+            delattr(module, attribute)
     else:
         # 'saved' is prev value, so reset to 'saved' later
-        restore = lambda: setattr(module, attribute, saved)
-
+        def restore():
+            setattr(module, attribute, saved)
     try:
         # set the desired module attribute
         setattr(module, attribute, value)

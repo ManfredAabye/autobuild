@@ -160,7 +160,7 @@ $''' % ('test1', '1.0', re.escape(os.path.join(self.data_dir, "package-test", "a
                                  (self.tar_name, expected_tar_name))
 
     def test_autobuild_package(self):
-        with CaptureStdout() as stream:
+        with CaptureStdout():
             self.autobuild("package",
                            "--config-file=" + self.config_path,
                            "-p", "common")

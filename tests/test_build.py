@@ -22,7 +22,7 @@ from tests.executables import echo, envtest, noop
 # ****************************************************************************
 logger = logging.getLogger("autobuild.test_build")
 
-def build(*args):
+def local_build(*args):
     """
     Some of our tests use BaseTest.autobuild() to run the build command as a
     child process. Some call the build command in-process. This is the latter.
@@ -134,7 +134,7 @@ class TestMissingPackageNameCurrent(LocalBase):
         # Make sure the verbose 'new requirement' message is only produced
         # when the missing key is in fact version_file.
         with exc(BuildError, "name"):
-            build('build', '--config-file=' + self.tmp_file, '--id=123456')
+            local_build('build', '--config-file=' + self.tmp_file, '--id=123456')
 
 class TestMissingVersion(LocalBase):
     def get_config(self):
@@ -187,7 +187,7 @@ class TestSCMVersion(LocalBase):
         return config
 
     def test_autobuild_build(self):
-        build('build', '--config-file=' + self.tmp_file, '--id=123456')
+        local_build('build', '--config-file=' + self.tmp_file, '--id=123456')
         self.assertEqual(self.read_metadata().package_description.version, "5.0.0")
 
 @needs_git
@@ -207,7 +207,7 @@ class TestVCSInfo(LocalBase):
 
     def test_opt_in(self):
         with envvar("AUTOBUILD_VCS_INFO", "true"):
-            build('build', '--config-file=' + self.tmp_file, '--id=123456')
+            local_build('build', '--config-file=' + self.tmp_file, '--id=123456')
             pkg = self.read_metadata()
             self.assertEqual(pkg.package_description.vcs_branch, "main")
             self.assertEqual(pkg.package_description.vcs_url, "https://example.com/foo.git")
@@ -215,7 +215,7 @@ class TestVCSInfo(LocalBase):
 
     def test_no_info(self):
         with envvar("AUTOBUILD_VCS_INFO", None):
-            build('build', '--config-file=' + self.tmp_file, '--id=123456')
+            local_build('build', '--config-file=' + self.tmp_file, '--id=123456')
             pkg = self.read_metadata()
             self.assertIsNone(pkg.package_description.vcs_branch)
             self.assertIsNone(pkg.package_description.vcs_url)
@@ -231,7 +231,7 @@ class TestVersionFileOddWhitespace(LocalBase):
         return config
 
     def test_autobuild_build(self):
-        build('build', '--config-file=' + self.tmp_file, '--id=123456')
+        local_build('build', '--config-file=' + self.tmp_file, '--id=123456')
         self.assertEqual(self.read_metadata().package_description.version, "2.3")
 
 class TestSubstitutions(LocalBase):

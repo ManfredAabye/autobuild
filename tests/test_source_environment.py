@@ -6,9 +6,11 @@ import sys
 import tempfile
 from ast import literal_eval
 from pprint import pformat
+import re
+from io import StringIO
 
 from autobuild import autobuild_tool_source_environment as atse
-from tests.basetest import *
+from tests.basetest import BaseTest, needs_nix, needs_cygwin, exc, capture_stdout_buffer, envvar
 from tests.patch import patch
 
 
@@ -33,7 +35,29 @@ def assert_dict_subset(d, s):
             if keys:
                 keys.sort()
                 msg.extend((label, pformat(keys)))
-        raise AssertionError('\n'.join(msg))
+def assert_in(member, container):
+    if member not in container:
+        raise AssertionError(f"{member!r} not found in {container!r}")
+    if member not in container:
+        raise AssertionError(f"{member!r} not found in {container!r}")
+
+def assert_not_in(member, container):
+    if member in container:
+        raise AssertionError(f"{member!r} unexpectedly found in {container!r}")
+
+def assert_found_in(pattern, outputs):
+    """Assert that the regex pattern is found in at least one of the outputs."""
+    for output in outputs:
+        if re.search(pattern, output):
+            return True
+    raise AssertionError("Pattern not found: %r in outputs: %r" % (pattern, outputs))
+
+def assert_not_found_in(pattern, outputs):
+    """Assert that the regex pattern is NOT found in any of the outputs."""
+    for output in outputs if isinstance(outputs, (list, tuple)) else [outputs]:
+        if re.search(pattern, output):
+            raise AssertionError("Pattern unexpectedly found: %r in outputs: %r" % (pattern, outputs))
+    return True
 
 def assert_found_assignment(key, value, output):
     # shorthand for a regex search

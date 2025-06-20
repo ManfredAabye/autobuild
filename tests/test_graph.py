@@ -17,7 +17,7 @@ except (ImportError, FileNotFoundError):
 
 import autobuild.autobuild_tool_graph as graph
 import autobuild.common as common
-from tests.basetest import *
+from tests.basetest import BaseTest, temp_dir, ExpectError, CaptureStdout, clean_dir, assert_found_in, assert_not_found_in, assert_in
 
 logger = logging.getLogger(__name__)
 

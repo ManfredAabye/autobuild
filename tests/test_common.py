@@ -12,7 +12,7 @@ class TestCommon(BaseTest):
             shell = "cmd"
 
         exe_path = common.find_executable(shell)
-        assert exe_path != None
+        assert exe_path is not None
 
     def tearDown(self):
         BaseTest.tearDown(self)

@@ -36,7 +36,7 @@ class TestManifest(BaseTest, AutobuildBaselineCompare):
         manifest.add(self.config, 'common', '*.py')
         manifest.remove(self.config, 'common', '*.cpp')
         common_manifest = self.config.get_platform('common').manifest
-        assert (not '*.cpp' in common_manifest)
+        assert '*.cpp' not in common_manifest
         assert ('*.h' in common_manifest) and ('*.py' in common_manifest)
         assert len(common_manifest) == 2
 
@@ -59,7 +59,7 @@ class TestManifest(BaseTest, AutobuildBaselineCompare):
                        '-p', 'common', 'remove', '*.cpp')
         self.config = configfile.ConfigurationDescription(self.tmp_file)
         common_manifest = self.config.get_platform('common').manifest
-        assert (not '*.cpp' in common_manifest)
+        assert '*.cpp' not in common_manifest
         assert ('*.h' in common_manifest) and ('*.py' in common_manifest)
 
     def tearDown(self):
