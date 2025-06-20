@@ -17,6 +17,10 @@ changelog:
       labels:
         - semver-patch
         - bug
+    - title: Maintenance 🔧
+      labels:
+        - chore
+        - refactor
     - title: Other Changes
       labels:
         - "*"
