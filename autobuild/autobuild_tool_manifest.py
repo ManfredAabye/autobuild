@@ -10,32 +10,40 @@ from autobuild import autobuild_base, common, configfile
 
 class AutobuildTool(autobuild_base.AutobuildBase):
     def get_details(self):
-        return dict(name=self.name_from_file(__file__),
-                    description="Manipulate manifest entries to the autobuild configuration.")
+        return dict(
+            name=self.name_from_file(__file__),
+            description="Manipulate manifest entries to the autobuild configuration.",
+        )
 
     def register(self, parser):
         parser.description = "specify manifest of artifacts to be packaged by the 'autobuild package' command."
-        parser.add_argument('--config-file',
-                            dest='config_file',
-                            default=configfile.AUTOBUILD_CONFIG_FILE,
-                            help='(defaults to $AUTOBUILD_CONFIG_FILE or "autobuild.xml")')
-        parser.add_argument('command', nargs='?', default='print',
-                            help="manifest command: add, remove, clear, or print")
-        parser.add_argument('pattern', nargs='*', help='a file pattern')
+        parser.add_argument(
+            "--config-file",
+            dest="config_file",
+            default=configfile.AUTOBUILD_CONFIG_FILE,
+            help='(defaults to $AUTOBUILD_CONFIG_FILE or "autobuild.xml")',
+        )
+        parser.add_argument(
+            "command",
+            nargs="?",
+            default="print",
+            help="manifest command: add, remove, clear, or print",
+        )
+        parser.add_argument("pattern", nargs="*", help="a file pattern")
 
     def run(self, args):
-        platform=common.get_current_platform()
+        platform = common.get_current_platform()
         config = configfile.ConfigurationDescription(args.config_file)
-        if args.command == 'add':
+        if args.command == "add":
             [add(config, platform, p) for p in args.pattern]
-        elif args.command == 'remove':
+        elif args.command == "remove":
             [remove(config, platform, p) for p in args.pattern]
-        elif args.command == 'clear':
+        elif args.command == "clear":
             clear(config, platform)
-        elif args.command == 'print':
+        elif args.command == "print":
             print_manifest(config, platform)
         else:
-            raise ManifestError('unknown command %s' % args.command)
+            raise ManifestError("unknown command %s" % args.command)
         if not args.dry_run:
             config.save()
 
@@ -74,7 +82,7 @@ def print_manifest(config, platform_name):
     """
     Prints the platform's manifest.
     """
-    if platform_name == 'all':
+    if platform_name == "all":
         for platform in config.get_all_platforms():
             patterns = config.get_platform(platform).manifest
             if len(patterns) == 0:

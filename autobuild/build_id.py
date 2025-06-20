@@ -21,24 +21,30 @@ def establish_build_id(build_id_arg, config: ConfigurationDescription):
     """
     build_id = build_id_arg or get_build_id(config)
     logger.debug("Build id %s" % build_id)
-    os.environ['AUTOBUILD_BUILD_ID'] = str(build_id)
+    os.environ["AUTOBUILD_BUILD_ID"] = str(build_id)
     return build_id
 
 
 def get_build_id(config: "ConfigurationDescription") -> str:
-    if 'AUTOBUILD_BUILD_ID' in os.environ:
-        return os.environ['AUTOBUILD_BUILD_ID']
+    if "AUTOBUILD_BUILD_ID" in os.environ:
+        return os.environ["AUTOBUILD_BUILD_ID"]
 
     if config.package_description.use_scm_version:
         config_dir = os.path.dirname(config.path)
         build_id = git.get_version(config_dir)
         if build_id:
-            logger.warning("Warning: no --id argument or AUTOBUILD_BUILD_ID environment variable specified;\n    using SCM version (%s), which may not be unique" % build_id)
+            logger.warning(
+                "Warning: no --id argument or AUTOBUILD_BUILD_ID environment variable specified;\n    using SCM version (%s), which may not be unique"
+                % build_id
+            )
             return build_id
 
     # construct a timestamp that will fit into a signed 32 bit integer:
     #   <two digit year><three digit day of year><two digit hour><two digit minute>
 
     build_id = time.strftime("%y%j%H%M", time.gmtime())
-    logger.warning("Warning: no --id argument or AUTOBUILD_BUILD_ID environment variable specified;\n    using a value from the UTC date and time (%s), which may not be unique" % build_id)
+    logger.warning(
+        "Warning: no --id argument or AUTOBUILD_BUILD_ID environment variable specified;\n    using a value from the UTC date and time (%s), which may not be unique"
+        % build_id
+    )
     return build_id

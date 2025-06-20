@@ -5,6 +5,7 @@ Any code that is potentially common to all autobuild sub-commands
 should live in this module. This module should never depend on any
 other autobuild module.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -22,22 +23,25 @@ from functools import partial
 from typing import Callable
 
 from autobuild.version import AUTOBUILD_VERSION_STRING
+
 print(f"[DEBUG] AUTOBUILD_VERSION_STRING: {AUTOBUILD_VERSION_STRING}")
 
 logger = logging.getLogger(__name__)
 
+
 class AutobuildError(RuntimeError):
     pass
 
+
 # define the supported platforms
-PLATFORM_DARWIN    = 'darwin'
-PLATFORM_DARWIN64  = 'darwin64'
-PLATFORM_DARWIN_IOS  = 'darwin_ios'
-PLATFORM_WINDOWS   = 'windows'
-PLATFORM_WINDOWS64 = 'windows64'
-PLATFORM_LINUX     = 'linux'
-PLATFORM_LINUX64   = 'linux64'
-PLATFORM_COMMON    = 'common'
+PLATFORM_DARWIN = "darwin"
+PLATFORM_DARWIN64 = "darwin64"
+PLATFORM_DARWIN_IOS = "darwin_ios"
+PLATFORM_WINDOWS = "windows"
+PLATFORM_WINDOWS64 = "windows64"
+PLATFORM_LINUX = "linux"
+PLATFORM_LINUX64 = "linux64"
+PLATFORM_COMMON = "common"
 
 DEFAULT_ADDRSIZE = 32
 
@@ -50,10 +54,12 @@ DEFAULT_ADDRSIZE = 32
 # set by the first call and set the wrong thing. Capturing those variables
 # here at load time lets each establish_platform() call make its decisions
 # independently of any previous calls.
-_AUTOBUILD_PLATFORM_OVERRIDE = os.environ.get('AUTOBUILD_PLATFORM_OVERRIDE')
-_AUTOBUILD_PLATFORM          = os.environ.get('AUTOBUILD_PLATFORM')
+_AUTOBUILD_PLATFORM_OVERRIDE = os.environ.get("AUTOBUILD_PLATFORM_OVERRIDE")
+_AUTOBUILD_PLATFORM = os.environ.get("AUTOBUILD_PLATFORM")
 
-Platform=None
+Platform = None
+
+
 def get_current_platform():
     """
     Return appropriate the autobuild name for the current platform.
@@ -61,14 +67,20 @@ def get_current_platform():
     global Platform
     if Platform is None:
         logger.debug("platform recurse")
-        establish_platform(None) # uses the default for where we are running to set Platform
+        establish_platform(
+            None
+        )  # uses the default for where we are running to set Platform
     return Platform
 
-_build_dir=None
+
+_build_dir = None
+
+
 def establish_build_dir(directory):
     global _build_dir
     logger.debug("Establishing build dir as '%s'" % directory)
     _build_dir = directory
+
 
 def get_current_build_dir():
     """
@@ -79,21 +91,23 @@ def get_current_build_dir():
         raise AutobuildError("No build directory established")
     return _build_dir
 
+
 def build_dir_relative_path(path):
     """
     Returns a relative path derived from the input path rooted at the configuration file's
     directory when the input is an absolute path.
     """
-    outpath=path
+    outpath = path
     if os.path.isabs(path):
         # ensure that there is a trailing os.pathsep
         # so that when this prefix is stripped below to make the
         # path relative, we don't start with os.pathsep
-        build_dir=os.path.join(get_current_build_dir(),"")
+        build_dir = os.path.join(get_current_build_dir(), "")
         logger.debug("path '%s' build_dir '%s'" % (path, build_dir))
         if path.startswith(build_dir):
-            outpath=path[len(build_dir):]
+            outpath = path[len(build_dir) :]
     return outpath
+
 
 def is_system_64bit():
     """
@@ -101,52 +115,58 @@ def is_system_64bit():
     """
     return platform.machine().lower() in ("x86_64", "amd64", "arm64")
 
+
 def is_system_windows():
     # Note that Python has a commitment to the value "win32" even for 64-bit
     # Windows: http://stackoverflow.com/a/2145582/5533635
-    return sys.platform == 'win32' or sys.platform == 'cygwin'
+    return sys.platform == "win32" or sys.platform == "cygwin"
+
 
 def check_platform_system_match(platform):
     """
     Confirm that the selected platform is compatibile with the system we're on
     """
-    platform_should_be=None
+    platform_should_be = None
     if platform in (PLATFORM_WINDOWS, PLATFORM_WINDOWS64):
         if not is_system_windows():
-            platform_should_be="Windows"
+            platform_should_be = "Windows"
     elif platform in (PLATFORM_LINUX, PLATFORM_LINUX64):
-        if not sys.platform.startswith('linux'):
-            platform_should_be="Linux"
+        if not sys.platform.startswith("linux"):
+            platform_should_be = "Linux"
     elif platform in (PLATFORM_DARWIN, PLATFORM_DARWIN64, PLATFORM_DARWIN_IOS):
-        if sys.platform != 'darwin':
-            platform_should_be="Mac OS X"
+        if sys.platform != "darwin":
+            platform_should_be = "Mac OS X"
     elif platform != PLATFORM_COMMON:
         raise AutobuildError("Unsupported platform '%s'" % platform)
 
     if platform_should_be:
-        raise AutobuildError("Platform '%s' is only supported running on %s" % (platform, platform_should_be))
+        raise AutobuildError(
+            "Platform '%s' is only supported running on %s"
+            % (platform, platform_should_be)
+        )
+
 
 def establish_platform(specified_platform=None, addrsize=DEFAULT_ADDRSIZE):
     """
     Select the appropriate the autobuild name for the platform.
     """
     global Platform
-    specified_addrsize=addrsize
+    specified_addrsize = addrsize
     if addrsize == 64 and not is_system_64bit():
         logger.warning("This system is not 64 bit capable; using 32 bit address size")
         addrsize = 32
     if specified_platform is not None:
-        Platform=specified_platform
+        Platform = specified_platform
     elif _AUTOBUILD_PLATFORM_OVERRIDE:
-        Platform=_AUTOBUILD_PLATFORM_OVERRIDE
+        Platform = _AUTOBUILD_PLATFORM_OVERRIDE
     elif _AUTOBUILD_PLATFORM:
-        Platform=_AUTOBUILD_PLATFORM
-    elif sys.platform == 'darwin':
+        Platform = _AUTOBUILD_PLATFORM
+    elif sys.platform == "darwin":
         if addrsize == 64:
             Platform = PLATFORM_DARWIN64
         else:
             Platform = PLATFORM_DARWIN
-    elif sys.platform.startswith('linux'):
+    elif sys.platform.startswith("linux"):
         if addrsize == 64:
             Platform = PLATFORM_LINUX64
         else:
@@ -161,25 +181,31 @@ def establish_platform(specified_platform=None, addrsize=DEFAULT_ADDRSIZE):
 
     check_platform_system_match(Platform)
 
-    os.environ['AUTOBUILD_ADDRSIZE'] = str(addrsize) # for spawned commands
-    os.environ['AUTOBUILD_PLATFORM'] = Platform # for spawned commands
-    os.environ['AUTOBUILD_PLATFORM_OVERRIDE'] = Platform # for recursive invocations
-    os.environ['AUTOBUILD_CPU_COUNT'] = os.environ.get('AUTOBUILD_CPU_COUNT', str(multiprocessing.cpu_count()))
+    os.environ["AUTOBUILD_ADDRSIZE"] = str(addrsize)  # for spawned commands
+    os.environ["AUTOBUILD_PLATFORM"] = Platform  # for spawned commands
+    os.environ["AUTOBUILD_PLATFORM_OVERRIDE"] = Platform  # for recursive invocations
+    os.environ["AUTOBUILD_CPU_COUNT"] = os.environ.get(
+        "AUTOBUILD_CPU_COUNT", str(multiprocessing.cpu_count())
+    )
 
-    logger.debug("Specified platform %s address-size %d: result %s" \
-                 % (specified_platform, specified_addrsize, Platform))
+    logger.debug(
+        "Specified platform %s address-size %d: result %s"
+        % (specified_platform, specified_addrsize, Platform)
+    )
 
     return Platform
 
+
 def get_version_tuple(version_string):
     try:
-        return tuple(int(v) for v in version_string.split('.'))
+        return tuple(int(v) for v in version_string.split("."))
     except (AttributeError, ValueError) as err:
         # version_string might not have a split() method: might not be str.
         # One or more components might not be int values.
         logger.debug("Can't parse version string %r: %s" % (version_string, err))
         # Treat any unparseable version as "very old"
         return (0,)
+
 
 def get_current_user():
     """
@@ -188,10 +214,12 @@ def get_current_user():
     try:
         # Unix-only.
         import getpass
+
         return getpass.getuser()
     except ImportError:
         import ctypes
-        MAX_PATH = 260                  # according to a recent WinDef.h
+
+        MAX_PATH = 260  # according to a recent WinDef.h
         name = ctypes.create_unicode_buffer(MAX_PATH)
         namelen = ctypes.c_int(len(name))  # len in chars, NOT bytes
         if not ctypes.windll.advapi32.GetUserNameW(name, ctypes.byref(namelen)):
@@ -203,8 +231,10 @@ def get_autobuild_environment():
     """
     Return an environment under which to execute autobuild subprocesses.
     """
-    return dict(os.environ, AUTOBUILD=os.environ.get(
-        'AUTOBUILD', get_autobuild_executable_path()))
+    return dict(
+        os.environ,
+        AUTOBUILD=os.environ.get("AUTOBUILD", get_autobuild_executable_path()),
+    )
 
 
 def get_install_cache_dir():
@@ -212,7 +242,7 @@ def get_install_cache_dir():
     In general, the package archives do not change much, so find a
     host/user specific location to cache files.
     """
-    cache = os.getenv('AUTOBUILD_INSTALLABLE_CACHE')
+    cache = os.getenv("AUTOBUILD_INSTALLABLE_CACHE")
     if cache is None:
         cache = get_temp_dir("install.cache")
     else:
@@ -229,7 +259,7 @@ def get_temp_dir(basename):
     """
     user = get_current_user()
     if is_system_windows():
-        installdir = '%s.%s' % (basename, user)
+        installdir = "%s.%s" % (basename, user)
         tmpdir = os.path.join(tempfile.gettempdir(), installdir)
     else:
         tmpdir = "/var/tmp/%s/%s" % (user, basename)
@@ -292,7 +322,7 @@ def find_executable(executables, exts=None, path=None):
     if exts is None:
         exts = sys.platform.startswith("win") and [".com", ".exe", ".bat", ".cmd"] or []
     if path is None:
-        path=os.environ.get('PATH', '').split(os.pathsep)
+        path = os.environ.get("PATH", "").split(os.pathsep)
     # The original implementation iterated over directories in PATH, checking
     # for each name in 'executables' in a given directory. This makes
     # intuitive sense -- but it's wrong. When 'executables' is (e.g.) ['foobar',
@@ -318,7 +348,7 @@ def dedup_path(path, sep=os.pathsep):
     Optionally pass a separator, if you want anything other than os.pathsep.
     """
     # OrderedDict is just what the doctor, um...
-    return sep.join(OrderedDict((dir.rstrip(r'\/'), 1) for dir in path.split(sep)))
+    return sep.join(OrderedDict((dir.rstrip(r"\/"), 1) for dir in path.split(sep)))
 
 
 def compute_hash(path: str, hash: Callable[[], hashlib._Hash]):
@@ -327,7 +357,7 @@ def compute_hash(path: str, hash: Callable[[], hashlib._Hash]):
     """
     h = hash()
     try:
-        with open(path, 'rb') as f:
+        with open(path, "rb") as f:
             chunk = f.read(8192)
             while chunk:
                 h.update(chunk)
@@ -361,13 +391,13 @@ def split_tarname(pathname):
     # docstring example points out, doing that too early would confuse things,
     # as there are dot characters in the embedded version number. So we have
     # to split on '-' FIRST.
-    fileparts = filename.split('-')
+    fileparts = filename.split("-")
     # fileparts = ["boost", "1.39.0", "darwin", "20100222a.tar.bz2"]
     # Almost there -- we just have to lop off the extension. NOW split on '.'.
     # We know there's at least fileparts[-1] because splitting a string with
     # no '-' -- even the empty string -- produces a list containing the
     # original string.
-    extparts = fileparts[-1].split('.')
+    extparts = fileparts[-1].split(".")
     # extparts = ["20100222a", "tar", "bz2"]
     # Replace the last entry in fileparts with the first part of extparts.
     fileparts[-1] = extparts[0]
@@ -376,16 +406,17 @@ def split_tarname(pathname):
     # delete extparts[0], replace it with the empty string. Yes, this does
     # assume that split() returns a list.
     extparts[0] = ""
-    ext = '.'.join(extparts)
+    ext = ".".join(extparts)
     # One more funky case. We've encountered "version numbers" like
     # "2009-08-30", "1-0" or "1.2-alpha". This would produce too many
     # fileparts, e.g. ["boost", "2009", "08", "30", "darwin", "20100222a"].
     # Detect that and recombine.
     if len(fileparts) > 4:
-        fileparts[1:-2] = ['-'.join(fileparts[1:-2])]
+        fileparts[1:-2] = ["-".join(fileparts[1:-2])]
     if len(fileparts) < 4:
-        raise AutobuildError("Incompatible archive name '%s' lacks some components" \
-                             % filename)
+        raise AutobuildError(
+            "Incompatible archive name '%s' lacks some components" % filename
+        )
     return dir, fileparts, ext
 
 
@@ -463,8 +494,7 @@ def select_directories(args, config, desc, verb, dir_from_config):
         logger.debug("specified %s directory: %s" % (desc, args.select_dir))
         return [args.select_dir]
 
-    return [dir_from_config(conf)
-            for conf in select_configurations(args, config, verb)]
+    return [dir_from_config(conf) for conf in select_configurations(args, config, verb)]
 
 
 def select_configurations(args, config, verb):
@@ -492,11 +522,16 @@ def select_configurations(args, config, verb):
     if args.all:
         configurations = config.get_all_build_configurations(platform)
     elif args.configurations:
-        configurations = [config.get_build_configuration(name, platform)
-                          for name in args.configurations]
+        configurations = [
+            config.get_build_configuration(name, platform)
+            for name in args.configurations
+        ]
     else:
         configurations = config.get_default_build_configurations(platform)
-    logger.debug("common.select_configurations %s configuration(s)\n%s" % (verb, pprint.pformat(configurations)))
+    logger.debug(
+        "common.select_configurations %s configuration(s)\n%s"
+        % (verb, pprint.pformat(configurations))
+    )
     return configurations
 
 

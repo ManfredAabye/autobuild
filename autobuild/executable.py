@@ -12,6 +12,7 @@ from autobuild import common
 
 logger = logging.getLogger(__name__)
 
+
 class ExecutableError(common.AutobuildError):
     pass
 
@@ -39,7 +40,9 @@ class Executable(common.Serialized):
 
     parent = None
 
-    def __init__(self, command=None, options=[], arguments=None, filters=None, parent=None):
+    def __init__(
+        self, command=None, options=[], arguments=None, filters=None, parent=None
+    ):
         self.command = command
         self.options = options
         self.arguments = arguments
@@ -78,28 +81,29 @@ class Executable(common.Serialized):
             return subprocess.call(commandlist, env=environment)
         else:
             # have to filter, so run stdout through a pipe
-            process = subprocess.Popen(commandlist, env=environment,
-                                       stdout=subprocess.PIPE)
+            process = subprocess.Popen(
+                commandlist, env=environment, stdout=subprocess.PIPE
+            )
             filters_re = [re.compile(filter, re.MULTILINE) for filter in filters]
             for line in process.stdout:
                 if any(regex.search(line) for regex in filters_re):
                     continue
                 line = line.replace("\r\n", "\n")
                 line = line.replace("\r", "\n")
-                print(line, end=' ')
+                print(line, end=" ")
             return process.wait()
 
     def show_command(self, commandlist, filters):
-        showcmd=" '%s'" % "' '".join(commandlist)
-        showfilter="\n| filter (%s)" % "|".join(filters) if filters else ""
+        showcmd = " '%s'" % "' '".join(commandlist)
+        showfilter = "\n| filter (%s)" % "|".join(filters) if filters else ""
         print("%s%s" % (showcmd, showfilter))
         sys.stdout.flush()
 
     def __str__(self, options=[]):
         try:
-            return ' '.join(self._get_all_arguments(options))
+            return " ".join(self._get_all_arguments(options))
         except Exception:
-            return 'INVALID EXECUTABLE!'
+            return "INVALID EXECUTABLE!"
 
     def get_arguments(self):
         """
@@ -148,7 +152,7 @@ class Executable(common.Serialized):
     def _get_all_arguments(self, options):
         actual_command = self.get_command()
         if actual_command is None:
-            raise ExecutableError('no command specified')
+            raise ExecutableError("no command specified")
         all_arguments = [actual_command]
         all_arguments.extend(self.get_options())
         all_arguments.extend(options)

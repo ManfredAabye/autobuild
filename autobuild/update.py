@@ -2,20 +2,21 @@
 Includes tools for updating older versions of autobuild configurations to the the current format.
 """
 
-
 import logging
 import shlex
 
 from autobuild.common import AutobuildError, get_version_tuple
+
 # Please do NOT import configfile data classes! See comments for _register().
 # or Executable either, which also changes with AUTOBUILD_CONFIG_VERSION
 from autobuild.configfile import AUTOBUILD_CONFIG_VERSION
 
-logger = logging.getLogger('autobuild.update')
+logger = logging.getLogger("autobuild.update")
 
 
 class UpdateError(AutobuildError):
     pass
+
 
 # ****************************************************************************
 #   Updater management machinery
@@ -23,6 +24,7 @@ class UpdateError(AutobuildError):
 # A map of updaters keyed by 'from' version string, each with a list of ('to'
 # version, conversion function) pairs.
 _updaters = {}
+
 
 # Do not directly manipulate _updaters. Register each converter using this
 # _register() function.
@@ -56,6 +58,7 @@ def _register(fromver, tover, func):
     # this new pair.
     _updaters.setdefault(fromver, []).append((tover, func))
 
+
 # Get a list of (fromver, tover, converter) triples to apply in succession to
 # bring incoming LLSD in 'version' format up to AUTOBUILD_CONFIG_VERSION
 # format. AUTOBUILD_CONFIG_VERSION is the format version compatible with the
@@ -86,11 +89,12 @@ def _get_applicable_updaters(configname, version):
         try:
             pairs = _updaters[intermediate_version]
         except KeyError:
-            raise UpdateError("Cannot convert config file %s "
-                              "from version %s format to current version %s: "
-                              "no converter for %s format" %
-                              (configname, version, AUTOBUILD_CONFIG_VERSION,
-                               intermediate_version))
+            raise UpdateError(
+                "Cannot convert config file %s "
+                "from version %s format to current version %s: "
+                "no converter for %s format"
+                % (configname, version, AUTOBUILD_CONFIG_VERSION, intermediate_version)
+            )
         # pairs is now a list of (tover, converter) pairs. Sort them by
         # descending 'tover' -- remembering to compare version tuples rather
         # than raw version strings.
@@ -110,6 +114,7 @@ def _get_applicable_updaters(configname, version):
     # ta daa, we've reached AUTOBUILD_CONFIG_VERSION!
     return result
 
+
 def convert_to_current(configname, config):
     """
     Pass the LLSD config data read from file configname.
@@ -126,9 +131,12 @@ def convert_to_current(configname, config):
         # version 1.1 we refused to deal with it. (This weasels out of the
         # problem of what "original version" to return, since None is
         # obviously wrong here.)
-        raise UpdateError("""incompatible configuration file %s
+        raise UpdateError(
+            """incompatible configuration file %s
 if this is a legacy format autobuild.xml file, please try the workaround found here:
-https://wiki.lindenlab.com/wiki/Autobuild/Incompatible_Configuration_File_Error""" % configname)
+https://wiki.lindenlab.com/wiki/Autobuild/Incompatible_Configuration_File_Error"""
+            % configname
+        )
 
     triples = _get_applicable_updaters(configname, version)
     if not triples:
@@ -139,14 +147,17 @@ https://wiki.lindenlab.com/wiki/Autobuild/Incompatible_Configuration_File_Error"
     for fromver, tover, converter in triples:
         # info message clarifies the context in which a subsequent error might
         # appear
-        logger.warning("Converting %s data from format version %s to version %s..." %
-                    (configname, fromver, tover))
+        logger.warning(
+            "Converting %s data from format version %s to version %s..."
+            % (configname, fromver, tover)
+        )
         config = converter(config)
         # update the version string in the config data; don't require every
         # converter to do that independently; easy to forget
         config["version"] = tover
 
     return config, version
+
 
 # ****************************************************************************
 #   Updaters
@@ -156,19 +167,20 @@ class _Update_1_1(object):
     """
     Converts a 1.1 version configuration to 1.2.
     """
+
     package_properties = {
-        'name': 'name',
-        'copyright': 'copyright',
-        'description': 'description',
-        'license': 'license',
-        'licensefile': 'license_file',
-        'homepage': 'homepage',
-        'version': 'version',
+        "name": "name",
+        "copyright": "copyright",
+        "description": "description",
+        "license": "license",
+        "licensefile": "license_file",
+        "homepage": "homepage",
+        "version": "version",
     }
 
     archive_properties = {
-        'md5sum': 'hash',
-        'url': 'url',
+        "md5sum": "hash",
+        "url": "url",
     }
 
     # The functions below snapshot the format version 1.2 configfile data
@@ -180,95 +192,113 @@ class _Update_1_1(object):
     # appropriately-filled dict instance.
     @staticmethod
     def PackageDescription(name):
-        return {'copyright': None,
-                'install_dir': None,
-                'license': None,
-                'license_file': None,
-                'name': name,
-                'platforms': {},
-                'version': None}
+        return {
+            "copyright": None,
+            "install_dir": None,
+            "license": None,
+            "license_file": None,
+            "name": name,
+            "platforms": {},
+            "version": None,
+        }
 
     @staticmethod
     def ArchiveDescription():
-        return {'creds': None, 'format': None, 'hash': None, 'hash_algorithm': None, 'url': None}
+        return {
+            "creds": None,
+            "format": None,
+            "hash": None,
+            "hash_algorithm": None,
+            "url": None,
+        }
 
     @staticmethod
     def BuildConfigurationDescription():
-        return {'build': None, 'configure': None, 'default': False}
+        return {"build": None, "configure": None, "default": False}
 
     @staticmethod
     def PlatformDescription():
-        return {'archive': None,
-                'build_directory': None,
-                'configurations': {},
-                'manifest': []}
+        return {
+            "archive": None,
+            "build_directory": None,
+            "configurations": {},
+            "manifest": [],
+        }
 
     @staticmethod
     def Executable(command, arguments):
-        return {'arguments': arguments,
-                'command': command,
-                'filters': None,
-                'options': []}
-
+        return {
+            "arguments": arguments,
+            "command": command,
+            "filters": None,
+            "options": [],
+        }
 
     def __call__(self, old_config):
-        assert old_config['version'] == '1.1'
+        assert old_config["version"] == "1.1"
         config = old_config.copy()
-        if 'package_definition' in old_config:
-            old_package = old_config['package_definition']
-            package_description = self.PackageDescription('unnamed')
+        if "package_definition" in old_config:
+            old_package = old_config["package_definition"]
+            package_description = self.PackageDescription("unnamed")
             config["package_description"] = package_description
             self._insert_package_properties(old_package, package_description)
-            self._insert_command('configure', old_package.get('configure', {}), package_description)
-            self._insert_command('build', old_package.get('build', {}), package_description)
-            for (platform_name, manifest) in old_package.get('manifest', {}).items():
-                self._get_platform(platform_name, package_description)["manifest"] = \
-                    manifest.get('files', [])
+            self._insert_command(
+                "configure", old_package.get("configure", {}), package_description
+            )
+            self._insert_command(
+                "build", old_package.get("build", {}), package_description
+            )
+            for platform_name, manifest in old_package.get("manifest", {}).items():
+                self._get_platform(platform_name, package_description)["manifest"] = (
+                    manifest.get("files", [])
+                )
         else:
-            raise UpdateError('no package description')
-        if 'installables' in old_config:
-            for (old_package_name, old_package) in old_config['installables'].items():
+            raise UpdateError("no package description")
+        if "installables" in old_config:
+            for old_package_name, old_package in old_config["installables"].items():
                 package = self.PackageDescription(old_package_name)
                 self._insert_package_properties(old_package, package)
-                self._insert_archives(old_package['archives'], package)
+                self._insert_archives(old_package["archives"], package)
                 config["installables"][old_package_name] = package
         return config
 
     def _insert_package_properties(self, old_package, package):
-        for (key, value) in self.package_properties.items():
+        for key, value in self.package_properties.items():
             if key in old_package:
                 package[value] = old_package[key]
 
     def _insert_archives(self, old_archives, package):
-        for (platform_name, old_archive) in old_archives.items():
+        for platform_name, old_archive in old_archives.items():
             platform = self._get_platform(platform_name, package)
             archive = self.ArchiveDescription()
             platform["archive"] = archive
-            for (key, value) in self.archive_properties.items():
+            for key, value in self.archive_properties.items():
                 archive[value] = old_archive[key]
 
     def _insert_command(self, type, old_commands, package):
-        for (platform_name, old_command) in old_commands.items():
+        for platform_name, old_command in old_commands.items():
             platform = self._get_platform(platform_name, package)
-            #FIXME: find a better way to choose the default configuration.
-            default_configuration = 'RelWithDebInfo'
+            # FIXME: find a better way to choose the default configuration.
+            default_configuration = "RelWithDebInfo"
             if default_configuration in platform["configurations"]:
                 build_configuration = platform["configurations"][default_configuration]
             else:
                 build_configuration = self.BuildConfigurationDescription()
                 build_configuration["name"] = default_configuration
                 platform["configurations"][default_configuration] = build_configuration
-            if 'command' in old_command:
-                tokens = shlex.split(old_command['command'])
+            if "command" in old_command:
+                tokens = shlex.split(old_command["command"])
                 command = tokens.pop(0)
                 # It is pretty much impossible to infer where the options end and the arguments
                 # begin since we don't know which options take values, so make everything an
                 # argument. Parent options will come before arguments so things should probably work
                 # as expected.
-                build_configuration[type] = self.Executable(command=command, arguments=tokens)
+                build_configuration[type] = self.Executable(
+                    command=command, arguments=tokens
+                )
                 build_configuration["default"] = True
-            if 'directory' in old_command:
-                platform["build_directory"] = old_command['directory']
+            if "directory" in old_command:
+                platform["build_directory"] = old_command["directory"]
 
     def _get_platform(self, platform_name, package):
         if platform_name in package["platforms"]:
@@ -279,11 +309,12 @@ class _Update_1_1(object):
             package["platforms"][platform_name] = platform
             return platform
 
-_register('1.1', '1.2', _Update_1_1())
+
+_register("1.1", "1.2", _Update_1_1())
 
 # -------------------------------- 1.2 -> 1.3 --------------------------------
 # We don't actually convert from 1.2: 1.3 introduces a new requirement, but we
 # can't implicitly derive the new version_file attribute from 1.2 data. This
 # change is handled elsewhere: autobuild_tool_build.py. Nonetheless we need a
 # no-op converter, else we blow up with inability to convert the file forward.
-_register('1.2', '1.3', lambda config: config)
+_register("1.2", "1.3", lambda config: config)

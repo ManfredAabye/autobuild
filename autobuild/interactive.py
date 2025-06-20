@@ -25,7 +25,7 @@ class InteractiveCommand(object):
         delete       method used to delete a config file entry.
     """
 
-    HELP = ''
+    HELP = ""
 
     def __init__(self, config):
         """
@@ -58,20 +58,20 @@ class InteractiveCommand(object):
             self to be a class describing the feature to be configured interactively.
         """
         try:
-            getattr(self, 'ARGUMENTS')
+            getattr(self, "ARGUMENTS")
         except AttributeError:
             raise AutobuildError("Interactive mode not supported.")
 
-        command = '%s' % self.__class__.__name__
+        command = "%s" % self.__class__.__name__
         command = command.lower()
-        if getattr(self, 'description', ''):
-            print('\n%s' % self.description)
+        if getattr(self, "description", ""):
+            print("\n%s" % self.description)
 
         action = "Create or update"
         if delete:
             action = "Delete"
         print("\n%s %s details:" % (action, command))
-        if getattr(self, 'help', ''):
+        if getattr(self, "help", ""):
             print(self.help)
         print("Any fields left blank will remain unchanged.")
         print("Any fields entered as 'none' will clear the existing value.")
@@ -79,18 +79,18 @@ class InteractiveCommand(object):
         input_values = {}
         for argument in self.ARGUMENTS:
             try:
-                helptext = self.ARG_DICT[argument]['help']
+                helptext = self.ARG_DICT[argument]["help"]
                 converter = self.ARG_DICT[argument].get("converter", str)
                 i = input("    %s> " % helptext)
                 if i:
-                    if i.lower() == 'none':
-                        i = ''
+                    if i.lower() == "none":
+                        i = ""
                     input_values[argument] = converter(i)
             except EOFError:
                 print("")
-                exit = 'y'
+                exit = "y"
                 exit = input("Do you really want to exit ([y]/n)? ")
-                if exit == 'y':
+                if exit == "y":
                     sys.exit(0)
 
         print("These fields will be changed:")
@@ -100,7 +100,7 @@ class InteractiveCommand(object):
                 self.delete(**input_values)
         else:
             save = input("Save to config (y/[n])? ")
-            if save in ['y', 'Y', 'yes', 'Yes', 'YES']:
+            if save in ["y", "Y", "yes", "Yes", "YES"]:
                 self.run(**input_values)
             else:
                 print("Not saved.")
@@ -119,7 +119,7 @@ class InteractiveCommand(object):
             else:
                 self.run(**kwargs)
         else:
-            if delete and not getattr(self, 'interactive_delete', True):
+            if delete and not getattr(self, "interactive_delete", True):
                 # special method to handle this combination of options to avoid mistakes
                 self.non_interactive_delete(**kwargs)
             else:
@@ -139,6 +139,6 @@ class InteractiveCommand(object):
 
     def _confirm_delete(self):
         really_delete = input("Do you really want to delete this entry (y/[n])? ")
-        if really_delete in ['y', 'Y', 'yes', 'Yes', 'YES']:
+        if really_delete in ["y", "Y", "yes", "Yes", "YES"]:
             return True
         return False

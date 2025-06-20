@@ -1,6 +1,7 @@
 """
 Implementations for various values of configfile.ArchiveDescription.hash_algorithm
 """
+
 from autobuild import common
 from autobuild.common import AutobuildError
 
@@ -18,6 +19,7 @@ class hash_algorithm(object):
     def _verify_md5(self, pathname, hash):
         ...
     """
+
     # called when we instantiate @hash_algorithm("md5")
     def __init__(self, key):
         self.key = key
@@ -41,7 +43,9 @@ def verify_hash(hash_algorithm, pathname, hash):
         # unconditionally fail, but that risks getting the user stuck. So
         # -- if there's no specified hash value, unconditionally accept
         # the download.
-        print("Warning: unable to verify %s; expected hash value not specified" % pathname)
+        print(
+            "Warning: unable to verify %s; expected hash value not specified" % pathname
+        )
         return True
 
     if not hash_algorithm:
@@ -53,8 +57,9 @@ def verify_hash(hash_algorithm, pathname, hash):
     try:
         function = REGISTERED_ALGORITHMS[hash_algorithm]
     except KeyError:
-        raise AutobuildError("Unsupported hash type %s for %s" %
-                             (hash_algorithm, pathname))
+        raise AutobuildError(
+            "Unsupported hash type %s for %s" % (hash_algorithm, pathname)
+        )
 
     # The final comparison should be case insensitive
     hash = hash.lower()

@@ -3,6 +3,7 @@ import tarfile
 import zipfile
 from typing import Union
 
+
 class ArchiveType:
     GZ = "gz"
     BZ2 = "bz2"
@@ -28,7 +29,7 @@ def _archive_type_from_signature(filename: str):
         head = f.read(_ARCHIVE_MAGIC_NUMBERS_MAX)
         for magic, f_type in _ARCHIVE_MAGIC_NUMBERS.items():
             if head.startswith(magic):
-                return f_type 
+                return f_type
     return None
 
 
@@ -65,16 +66,19 @@ def open_archive(filename: str) -> Union[tarfile.TarFile, zipfile.ZipFile]:
 
 
 class ZstdTarFile(tarfile.TarFile):
-    def __init__(self, name, mode='r', *, level=4, zstd_dict=None, **kwargs):
+    def __init__(self, name, mode="r", *, level=4, zstd_dict=None, **kwargs):
         from pyzstd import CParameter, ZstdFile
+
         zstdoption = None
-        if mode != 'r' and mode != 'rb':
-           zstdoption = {CParameter.compressionLevel : level,
-                         CParameter.nbWorkers : multiprocessing.cpu_count(),
-                         CParameter.checksumFlag : 1}
-        self.zstd_file = ZstdFile(name, mode,
-                                level_or_option=zstdoption,
-                                zstd_dict=zstd_dict)
+        if mode != "r" and mode != "rb":
+            zstdoption = {
+                CParameter.compressionLevel: level,
+                CParameter.nbWorkers: multiprocessing.cpu_count(),
+                CParameter.checksumFlag: 1,
+            }
+        self.zstd_file = ZstdFile(
+            name, mode, level_or_option=zstdoption, zstd_dict=zstd_dict
+        )
         try:
             super().__init__(fileobj=self.zstd_file, mode=mode, **kwargs)
         except:

@@ -45,7 +45,7 @@ class Semver(NamedTuple):
         meta = None
         try:
             meta_idx = last.index("+")
-            meta = last[meta_idx+1:]
+            meta = last[meta_idx + 1 :]
             split[-1] = last[:meta_idx]
         except ValueError:
             pass
@@ -55,14 +55,16 @@ class Semver(NamedTuple):
         prerelease = None
         try:
             prerelease_idx = last.index("-")
-            prerelease = last[prerelease_idx+1:]
+            prerelease = last[prerelease_idx + 1 :]
             split[-1] = last[:prerelease_idx]
         except ValueError:
             pass
 
         # Populate all version numbers, even if only one or two is provided, ex. v1 or v1.0
         try:
-            major, minor, patch = (int(split[i]) if i < len(split) else 0 for i in range(3))
+            major, minor, patch = (
+                int(split[i]) if i < len(split) else 0 for i in range(3)
+            )
         except ValueError:
             return None
 
@@ -73,4 +75,3 @@ class Semver(NamedTuple):
             prerelease=prerelease,
             meta=meta,
         )
-

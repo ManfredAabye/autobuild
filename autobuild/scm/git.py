@@ -86,7 +86,7 @@ class Git:
         self.repo_dir = _find_repo_dir(Path(root))
 
     def _git(self, *args) -> subprocess.CompletedProcess[str]:
-        log.debug(f'running git command: {" ".join(args)}')
+        log.debug(f"running git command: {' '.join(args)}")
         return cmd("git", "-C", str(self.repo_dir), *args)
 
     def describe(self) -> str:
@@ -99,11 +99,17 @@ class Git:
 
     @property
     def url(self) -> str | None:
-        return self._git("remote", "get-url", "origin").stdout if self.repo_dir else None
+        return (
+            self._git("remote", "get-url", "origin").stdout if self.repo_dir else None
+        )
 
     @property
     def branch(self) -> str | None:
-        return self._git("rev-parse", "--abbrev-ref", "HEAD").stdout if self.repo_dir else None
+        return (
+            self._git("rev-parse", "--abbrev-ref", "HEAD").stdout
+            if self.repo_dir
+            else None
+        )
 
     @property
     def version(self) -> str | None:
@@ -111,7 +117,9 @@ class Git:
             log.debug("no git root found, returning null version")
             return None
         meta = _parse_describe(self.describe())
-        next_version = meta.version.next if isinstance(meta.version, Semver) else meta.version
+        next_version = (
+            meta.version.next if isinstance(meta.version, Semver) else meta.version
+        )
         if meta.dirty:
             return f"{next_version}-dev{meta.distance}.g{meta.commit}.d{date()}"
         elif meta.distance:

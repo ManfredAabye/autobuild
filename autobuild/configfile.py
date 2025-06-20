@@ -14,10 +14,10 @@ from autobuild import common
 from autobuild.executable import Executable
 from autobuild.scm.git import get_version as get_git_version
 
-logger = logging.getLogger('autobuild.configfile')
+logger = logging.getLogger("autobuild.configfile")
 
 AUTOBUILD_CONFIG_FILE = os.environ.get("AUTOBUILD_CONFIG_FILE", "autobuild.xml")
-AUTOBUILD_CONFIG_VERSION = "1.3"        # introduced version_file requirement
+AUTOBUILD_CONFIG_VERSION = "1.3"  # introduced version_file requirement
 AUTOBUILD_CONFIG_TYPE = "autobuild"
 
 AUTOBUILD_INSTALLED_VERSION = "1"
@@ -64,7 +64,7 @@ class ConfigurationDescription(common.Serialized):
         self._expanded = False
         if path is not None:
             self.__load(path)
-            os.environ['AUTOBUILD_CONFIG_FILE'] = os.path.basename(self.path)
+            os.environ["AUTOBUILD_CONFIG_FILE"] = os.path.basename(self.path)
         elif copyfrom is not None:
             self.__init_from_dict(dict(copyfrom))
             self.path = getattr(copyfrom, "path", None)
@@ -100,11 +100,15 @@ class ConfigurationDescription(common.Serialized):
         if platform_name is None:
             platform_name = common.get_current_platform()
         try:
-            return self.get_platform(platform_name).configurations[build_configuration_name]
+            return self.get_platform(platform_name).configurations[
+                build_configuration_name
+            ]
         except KeyError:
-            raise ConfigurationError("no configuration for build configuration '%s' found; "
-                                     "one may be created using 'autobuild edit build'" %
-                                     build_configuration_name)
+            raise ConfigurationError(
+                "no configuration for build configuration '%s' found; "
+                "one may be created using 'autobuild edit build'"
+                % build_configuration_name
+            )
 
     def get_default_build_configurations(self, platform_name=None):
         """
@@ -112,37 +116,53 @@ class ConfigurationDescription(common.Serialized):
         """
         if platform_name is None:
             common.get_current_platform()
-        return [value
-                for (key, value) in self.get_platform(platform_name).configurations.items()
-                if value.default]
+        return [
+            value
+            for (key, value) in self.get_platform(platform_name).configurations.items()
+            if value.default
+        ]
 
     def get_build_directory(self, configuration, platform_name=None):
         """
         Returns the absolute path to the build directory for the platform.
         """
-        build_directory=None
+        build_directory = None
         if platform_name is None:
             platform_name = common.get_current_platform()
         platform_description = self.get_platform(platform_name)
-        common_platform_description = self.package_description.platforms.get(common.PLATFORM_COMMON, None)
+        common_platform_description = self.package_description.platforms.get(
+            common.PLATFORM_COMMON, None
+        )
         config_directory = os.path.dirname(self.path)
         # Try specific configuration build_directory first.
-        if hasattr(configuration, 'build_directory') and configuration.build_directory is not None:
+        if (
+            hasattr(configuration, "build_directory")
+            and configuration.build_directory is not None
+        ):
             build_directory = configuration.build_directory
             if not os.path.isabs(build_directory):
-                build_directory = os.path.abspath(os.path.join(config_directory, build_directory))
+                build_directory = os.path.abspath(
+                    os.path.join(config_directory, build_directory)
+                )
         elif platform_description.build_directory is not None:
-             build_directory = platform_description.build_directory
-             if not os.path.isabs(build_directory):
-                 build_directory = os.path.abspath(os.path.join(config_directory, build_directory))
-        elif common_platform_description is not None and common_platform_description.build_directory is not None:
+            build_directory = platform_description.build_directory
+            if not os.path.isabs(build_directory):
+                build_directory = os.path.abspath(
+                    os.path.join(config_directory, build_directory)
+                )
+        elif (
+            common_platform_description is not None
+            and common_platform_description.build_directory is not None
+        ):
             build_directory = common_platform_description.build_directory
             if not os.path.isabs(build_directory):
-                build_directory = os.path.abspath(os.path.join(config_directory, build_directory))
+                build_directory = os.path.abspath(
+                    os.path.join(config_directory, build_directory)
+                )
         else:
             build_directory = config_directory
 
-        common.establish_build_dir(build_directory) # save global state
+        common.establish_build_dir(build_directory)  # save global state
         return build_directory
 
     def get_platform(self, platform_name):
@@ -150,10 +170,15 @@ class ConfigurationDescription(common.Serialized):
         Returns the named platform description.
         """
         if self.package_description is None:
-            raise ConfigurationError("no package configuration defined; one may be created using 'autobuild edit package'")
+            raise ConfigurationError(
+                "no package configuration defined; one may be created using 'autobuild edit package'"
+            )
         platform_description = self.package_description.get_platform(platform_name)
         if platform_description is None:
-            raise ConfigurationError("no configuration for platform '%s' found; one may be created using 'autobuild edit platform'" % platform_name)
+            raise ConfigurationError(
+                "no configuration for platform '%s' found; one may be created using 'autobuild edit platform'"
+                % platform_name
+            )
         else:
             return platform_description
 
@@ -170,20 +195,24 @@ class ConfigurationDescription(common.Serialized):
         """
         return self.get_platform(common.get_current_platform())
 
-    def make_build_directory(self, configuration, platform=common.get_current_platform(), dry_run=False):
+    def make_build_directory(
+        self, configuration, platform=common.get_current_platform(), dry_run=False
+    ):
         """
         Makes the working platform's build directory if it does not exist and returns a path to it.
         """
         logger.debug("make_build_directory platform %s" % platform)
-        build_directory = self.get_build_directory(configuration, platform_name=platform)
+        build_directory = self.get_build_directory(
+            configuration, platform_name=platform
+        )
         if not os.path.isdir(build_directory):
             if not dry_run:
-                logger.info("Creating build directory %s"
-                            % build_directory)
+                logger.info("Creating build directory %s" % build_directory)
                 os.makedirs(build_directory)
             else:
-                logger.warn("Dry run mode: not creating build directory %s"
-                            % build_directory)
+                logger.warn(
+                    "Dry run mode: not creating build directory %s" % build_directory
+                )
         return build_directory
 
     def save(self):
@@ -192,10 +221,11 @@ class ConfigurationDescription(common.Serialized):
         """
         if self._expanded:
             # SL-525: Do NOT save if variables have been expanded!
-            raise ConfigurationError("Aborting attempt to save %s with variable expansions" %
-                                     self.path)
+            raise ConfigurationError(
+                "Aborting attempt to save %s with variable expansions" % self.path
+            )
         logger.debug("Writing configuration file %s" % self.path)
-        with open(self.path, 'wb') as f:
+        with open(self.path, "wb") as f:
             f.write(llsd.format_pretty_xml(_compact_to_dict(self)))
 
     def __load(self, path):
@@ -212,7 +242,7 @@ class ConfigurationDescription(common.Serialized):
             else:
                 self.path = abs_path
         if os.path.isfile(self.path):
-            with open(self.path, 'rb') as f:
+            with open(self.path, "rb") as f:
                 autobuild_xml = f.read()
             if not autobuild_xml:
                 logger.warning("Configuration file '%s' is empty" % self.path)
@@ -220,18 +250,24 @@ class ConfigurationDescription(common.Serialized):
             try:
                 saved_data = llsd.parse(autobuild_xml)
             except llsd.LLSDParseError:
-                raise common.AutobuildError("Configuration file %s is corrupt. Aborting..." % self.path)
+                raise common.AutobuildError(
+                    "Configuration file %s is corrupt. Aborting..." % self.path
+                )
             saved_data, orig_ver = update.convert_to_current(self.path, saved_data)
             # Presumably this check comes after format-version updates because
             # at some point in paleontological history the file format did not
             # include "type".
-            if saved_data.get("type", None) != 'autobuild':
-                raise common.AutobuildError(self.path + ' not an autobuild configuration file')
+            if saved_data.get("type", None) != "autobuild":
+                raise common.AutobuildError(
+                    self.path + " not an autobuild configuration file"
+                )
             self.__init_from_dict(saved_data)
             logger.debug("Configuration file '%s'" % self.path)
             if orig_ver:
-                logger.warning("Saving configuration file %s in format %s" %
-                            (self.path, AUTOBUILD_CONFIG_VERSION))
+                logger.warning(
+                    "Saving configuration file %s in format %s"
+                    % (self.path, AUTOBUILD_CONFIG_VERSION)
+                )
                 self.save()
                 # We don't want orig_ver to appear in the saved file: that's
                 # for internal use only. But we do want to track it because
@@ -244,27 +280,32 @@ class ConfigurationDescription(common.Serialized):
             raise ConfigurationError("cannot create configuration file %s" % self.path)
 
     def __init_from_dict(self, dictionary):
-        package_description = dictionary.pop('package_description', None)
+        package_description = dictionary.pop("package_description", None)
         if package_description is not None:
             self.package_description = PackageDescription(package_description)
-        installables = dictionary.pop('installables', {})
-        for (name, package) in installables.items():
+        installables = dictionary.pop("installables", {})
+        for name, package in installables.items():
             self.installables[name] = PackageDescription(package)
             if name != self.installables[name].name:
-                raise ConfigurationError("installable key '%s' does not match package name '%s'"
-                                         % (name, self.installables[name].name))
+                raise ConfigurationError(
+                    "installable key '%s' does not match package name '%s'"
+                    % (name, self.installables[name].name)
+                )
         self.update(dictionary)
 
     def expand_platform_vars(self, vars=os.environ):
         try:
             package_description = self.package_description
         except AttributeError:
-            logger.debug("ConfigurationDescription.expand_platform_vars(): "
-                         "%s has no package_description" % self.name)
+            logger.debug(
+                "ConfigurationDescription.expand_platform_vars(): "
+                "%s has no package_description" % self.name
+            )
             return
 
         package_description.expand_platform_vars(vars)
         self._expanded = True
+
 
 class AttrErrorString(str):
     """
@@ -281,6 +322,7 @@ class AttrErrorString(str):
     actually controls the entire content of the string: it does not embed
     arbitrary caller data.
     """
+
     # To intercept str construction, have to override __new__() as well as
     # __init__().
     def __new__(cls, attrs, message):
@@ -295,6 +337,7 @@ class AttrErrorString(str):
         super(AttrErrorString, self).__init__()
         self.attrs = attrs
 
+
 def check_package_attributes(container, additional_requirements=[]):
     """
     container may be a ConfigurationDescription or MetadataDescription
@@ -303,9 +346,9 @@ def check_package_attributes(container, additional_requirements=[]):
     str, or query its attrs attribute to discover the specific attributes with
     problems.
     """
-    attrs  = []
+    attrs = []
     errors = []
-    required_attributes = ['license', 'license_file', 'copyright', 'name']
+    required_attributes = ["license", "license_file", "copyright", "name"]
     try:
         package = container.package_description
     except AttributeError:
@@ -316,8 +359,11 @@ def check_package_attributes(container, additional_requirements=[]):
             # this test intentionally conflates missing, None, empty string
             if not getattr(package, attribute, None):
                 attrs.append(attribute)
-                errors.append("'%s' not specified in the package_description" % attribute)
-    return AttrErrorString(attrs, '\n'.join(errors))
+                errors.append(
+                    "'%s' not specified in the package_description" % attribute
+                )
+    return AttrErrorString(attrs, "\n".join(errors))
+
 
 class Dependencies(common.Serialized):
     """
@@ -337,9 +383,11 @@ class Dependencies(common.Serialized):
         """
         Save the configuration state to the input file.
         """
-        dict_representation=_compact_to_dict(self)
-        del dict_representation['path'] # there's no need for the file to include its own name
-        with open(self.path, 'wb') as f:
+        dict_representation = _compact_to_dict(self)
+        del dict_representation[
+            "path"
+        ]  # there's no need for the file to include its own name
+        with open(self.path, "wb") as f:
             f.write(llsd.format_pretty_xml(dict_representation))
 
     def __load(self, path=None):
@@ -353,7 +401,7 @@ class Dependencies(common.Serialized):
             else:
                 self.path = abs_path
         if os.path.isfile(self.path):
-            with open(self.path, 'rb') as f:
+            with open(self.path, "rb") as f:
                 installed_xml = f.read()
             if not installed_xml:
                 logger.warn("Installed file '%s' is empty" % self.path)
@@ -362,20 +410,30 @@ class Dependencies(common.Serialized):
             try:
                 saved_data = llsd.parse(installed_xml)
             except llsd.LLSDParseError:
-                raise common.AutobuildError("Installed file %s is not valid. Aborting..." % self.path)
-            if not (('version' in saved_data and saved_data['version'] == self.version)
-                    and ('type' in saved_data) and (saved_data['type'] == AUTOBUILD_INSTALLED_TYPE)):
-                raise common.AutobuildError(self.path + ' is not compatible with this version of autobuild.'
-                                     + '\nClearing your build directory and rebuilding should correct it.')
+                raise common.AutobuildError(
+                    "Installed file %s is not valid. Aborting..." % self.path
+                )
+            if not (
+                ("version" in saved_data and saved_data["version"] == self.version)
+                and ("type" in saved_data)
+                and (saved_data["type"] == AUTOBUILD_INSTALLED_TYPE)
+            ):
+                raise common.AutobuildError(
+                    self.path
+                    + " is not compatible with this version of autobuild."
+                    + "\nClearing your build directory and rebuilding should correct it."
+                )
 
-            dependencies = saved_data.pop('dependencies', {})
-            for (name, package) in dependencies.items():
+            dependencies = saved_data.pop("dependencies", {})
+            for name, package in dependencies.items():
                 self.dependencies[name] = package
             self.update(saved_data)
         elif not os.path.exists(self.path):
             logger.info("Installed packages file '%s' not found; creating." % self.path)
         else:
-            raise ConfigurationError("cannot create installed packages file %s" % self.path)
+            raise ConfigurationError(
+                "cannot create installed packages file %s" % self.path
+            )
 
 
 class MetadataDescription(common.Serialized):
@@ -399,9 +457,17 @@ class MetadataDescription(common.Serialized):
 
     * not used except when the MetadataDescription is in the Dependencies
     """
+
     path = None
 
-    def __init__(self, path=None, stream=None, parsed_llsd=None, convert_platform=None, create_quietly=False):
+    def __init__(
+        self,
+        path=None,
+        stream=None,
+        parsed_llsd=None,
+        convert_platform=None,
+        create_quietly=False,
+    ):
         self.version = AUTOBUILD_METADATA_VERSION
         self.type = AUTOBUILD_METADATA_TYPE
         self.build_id = None
@@ -419,11 +485,11 @@ class MetadataDescription(common.Serialized):
         if path:
             self.path = path
             if os.path.isfile(self.path):
-                with open(self.path, 'rb') as f:
+                with open(self.path, "rb") as f:
                     metadata_xml = f.read()
                 if not metadata_xml:
                     logger.warn("Metadata file '%s' is empty" % self.path)
-                    self.dirty=False
+                    self.dirty = False
                     return
             elif not os.path.exists(self.path):
                 if not create_quietly:
@@ -434,38 +500,44 @@ class MetadataDescription(common.Serialized):
             try:
                 parsed_llsd = llsd.parse(metadata_xml)
             except llsd.LLSDParseError:
-                raise common.AutobuildError("Metadata file %s is corrupt. Aborting..." % self.path)
+                raise common.AutobuildError(
+                    "Metadata file %s is corrupt. Aborting..." % self.path
+                )
 
         if parsed_llsd:
             self.__load(parsed_llsd)
             self.update(parsed_llsd)
 
-
     def __load(self, parsed_llsd):
-        if ('version' not in parsed_llsd) or (parsed_llsd['version'] != self.version) \
-                or ('type' not in parsed_llsd) or (parsed_llsd['type'] != 'metadata'):
-            raise ConfigurationError("missing or incompatible metadata %s" %
-                                     pprint.pformat(parsed_llsd))
+        if (
+            ("version" not in parsed_llsd)
+            or (parsed_llsd["version"] != self.version)
+            or ("type" not in parsed_llsd)
+            or (parsed_llsd["type"] != "metadata")
+        ):
+            raise ConfigurationError(
+                "missing or incompatible metadata %s" % pprint.pformat(parsed_llsd)
+            )
         else:
-            package_description = parsed_llsd.pop('package_description', None)
+            package_description = parsed_llsd.pop("package_description", None)
             if package_description:
                 self.package_description = PackageDescription(package_description)
             else:
                 raise ConfigurationError("metadata is missing package_description")
-            dependencies = parsed_llsd.pop('dependencies', {})
-            for (name, package) in dependencies.items():
+            dependencies = parsed_llsd.pop("dependencies", {})
+            for name, package in dependencies.items():
                 self.dependencies[name] = MetadataDescription(parsed_llsd=package)
-            self.manifest = parsed_llsd.pop('manifest', [])
+            self.manifest = parsed_llsd.pop("manifest", [])
 
     def add_dependencies(self, installed_pathname):
         logger.debug("loading " + installed_pathname)
         dependencies = Dependencies(installed_pathname)
-        for (name, package) in dependencies.dependencies.items():
-            del package['install_dir']
-            del package['manifest']
-            if 'dirty' in package and package['dirty']:
-                self.dirty=True
-            logger.debug("adding '%s':\n%s"%(name, pprint.pformat(package)))
+        for name, package in dependencies.dependencies.items():
+            del package["install_dir"]
+            del package["manifest"]
+            if "dirty" in package and package["dirty"]:
+                self.dirty = True
+            logger.debug("adding '%s':\n%s" % (name, pprint.pformat(package)))
             self.dependencies[name] = package
 
     def save(self):
@@ -473,10 +545,12 @@ class MetadataDescription(common.Serialized):
         Save the metadata.
         """
         if self.path:
-            with open(self.path, 'wb') as f:
+            with open(self.path, "wb") as f:
                 f.write(llsd.format_pretty_xml(_compact_to_dict(self)))
 
+
 package_selected_platform = None
+
 
 class PackageDescription(common.Serialized):
     """
@@ -535,16 +609,21 @@ class PackageDescription(common.Serialized):
         target_platform = None
         if platform in self.platforms:
             target_platform = self.platforms[platform]
-        elif platform.endswith('64'):
-            base_platform = platform[0:len(platform)-2]
+        elif platform.endswith("64"):
+            base_platform = platform[0 : len(platform) - 2]
             if base_platform in self.platforms:
                 target_platform = self.platforms[base_platform]
                 if package_selected_platform != base_platform:
-                    logger.info("No %s configuration found; inheriting %s" % (platform, base_platform))
+                    logger.info(
+                        "No %s configuration found; inheriting %s"
+                        % (platform, base_platform)
+                    )
                     package_selected_platform = base_platform
         if target_platform is None:
             target_platform = self.platforms.get(common.PLATFORM_COMMON)
-            logger.info("get_platform No %s configuration found; inheriting common" % (platform))
+            logger.info(
+                "get_platform No %s configuration found; inheriting common" % (platform)
+            )
         return target_platform
 
     def read_scm_version(self, build_directory):
@@ -563,8 +642,10 @@ class PackageDescription(common.Serialized):
         produce a deprecation warning.
         """
         if self.version:
-            logger.warn("package_description.version ignored in %s; use version_file instead" %
-                        AUTOBUILD_CONFIG_FILE)
+            logger.warn(
+                "package_description.version ignored in %s; use version_file instead"
+                % AUTOBUILD_CONFIG_FILE
+            )
 
         if not self.version_file:
             # should never hit this because caller should have already called
@@ -576,17 +657,19 @@ class PackageDescription(common.Serialized):
             with open(version_file) as vf:
                 version = vf.read().strip()
         except IOError as err:
-            raise common.AutobuildError("Can't read version_file '%s': %s" %
-                                        (self.version_file, err))
+            raise common.AutobuildError(
+                "Can't read version_file '%s': %s" % (self.version_file, err)
+            )
 
         if not version:
-            raise common.AutobuildError("version_file '%s' contains no version info" %
-                                        self.version_file)
+            raise common.AutobuildError(
+                "version_file '%s' contains no version info" % self.version_file
+            )
         return version
 
     def __init_from_dict(self, dictionary):
-        platforms = dictionary.pop('platforms', {})
-        for (key, value) in list(platforms.items()):
+        platforms = dictionary.pop("platforms", {})
+        for key, value in list(platforms.items()):
             self.platforms[key] = PlatformDescription(value)
         self.update(dictionary)
 
@@ -594,8 +677,10 @@ class PackageDescription(common.Serialized):
         try:
             platforms = self.platforms
         except AttributeError:
-            logger.debug("PackageDescription.expand_platform_vars(): "
-                         "%s has no platforms" % self.name)
+            logger.debug(
+                "PackageDescription.expand_platform_vars(): "
+                "%s has no platforms" % self.name
+            )
             return
 
         # Iterate through items() -- a copy -- so we can update in place
@@ -626,10 +711,10 @@ class PlatformDescription(common.Serialized):
             self.__init_from_dict(dict(dictionary))
 
     def __init_from_dict(self, dictionary):
-        configurations = dictionary.pop('configurations', {})
-        for (key, value) in configurations.items():
+        configurations = dictionary.pop("configurations", {})
+        for key, value in configurations.items():
             self.configurations[key] = BuildConfigurationDescription(value)
-        archive = dictionary.pop('archive', None)
+        archive = dictionary.pop("archive", None)
         if archive is not None:
             self.archive = ArchiveDescription(archive)
         self.update(dictionary)
@@ -645,7 +730,7 @@ class BuildConfigurationDescription(common.Serialized):
         build
     """
 
-    build_steps = ['configure', 'build']
+    build_steps = ["configure", "build"]
 
     def __init__(self, dictionary=None):
         self.configure = None
@@ -662,10 +747,11 @@ class BuildConfigurationDescription(common.Serialized):
         command = dictionary.pop(name, None)
         if command is not None:
             self[name] = Executable(
-                command=command.get('command'),
-                options=command.get('options', []),
-                arguments=command.get('arguments'),
-                filters=command.get('filters'))
+                command=command.get("command"),
+                options=command.get("options", []),
+                arguments=command.get("arguments"),
+                filters=command.get("filters"),
+            )
 
 
 class ArchiveDescription(common.Serialized):
@@ -678,6 +764,7 @@ class ArchiveDescription(common.Serialized):
         hash_algorithm
         url
     """
+
     # Implementations for various values of hash_algorithm should be found in
     # hash_algorithms.py.
     def __init__(self, dictionary=None):
@@ -697,16 +784,18 @@ class ArchiveDescription(common.Serialized):
         """
         # If we're comparing to something that's not even an
         # ArchiveDescription, no way is it equal.
-        if 'url' not in other or 'hash' not in other:
+        if "url" not in other or "hash" not in other:
             return False
         # If there's no hash_algorithm, assume "md5". That works for either
         # side: an ArchiveDescription with hash_algorithm None matches an
         # ArchiveDescription with hash_algorithm explicitly set to "md5".
-        if (self.hash_algorithm or "md5") != (('hash_algorithm' in other and other['hash_algorithm']) or "md5"):
+        if (self.hash_algorithm or "md5") != (
+            ("hash_algorithm" in other and other["hash_algorithm"]) or "md5"
+        ):
             return False
         # It's only reasonable to compare hash values if the hash_algorithm
         # matches.
-        return self.hash == other['hash'] and self.url == other['url']
+        return self.hash == other["hash"] and self.url == other["url"]
 
     def __ne__(self, other):
         # Use the same logic for both == and != operators.
@@ -722,13 +811,13 @@ def compact_to_dict(description):
     return _compact_to_dict(description)
 
 
-def pretty_print(description, stream=sys.stdout, format='pprint'):
+def pretty_print(description, stream=sys.stdout, format="pprint"):
     """
     Pretty prints a compact version of any description to a stream.
     """
-    if format == 'pprint':
+    if format == "pprint":
         pprint.pprint(compact_to_dict(description), stream, 1, 80)
-    elif format == 'json':
+    elif format == "json":
         json.dump(compact_to_dict(description), stream, indent=4)
     else:
         raise ValueError(f'Unrecognized format {format}. Expected "json" or "pprint"')
@@ -748,7 +837,7 @@ def pretty_print_string(description):
 def _compact_to_dict(obj):
     if isinstance(obj, dict):
         result = {}
-        for (key, value) in list(obj.items()):
+        for key, value in list(obj.items()):
             if value:
                 result[key] = _compact_to_dict(value)
         return result
@@ -758,6 +847,7 @@ def _compact_to_dict(obj):
         return [_compact_to_dict(o) for o in obj if o]
     else:
         return obj
+
 
 def expand_vars(data, vars=os.environ):
     """
@@ -783,7 +873,7 @@ def expand_vars(data, vars=os.environ):
         # str or unicode: expand
         return _expand_vars_string(data, vars)
 
-    if hasattr(data, 'items'):
+    if hasattr(data, "items"):
         # dict: copy it
         newdata = data.copy()
         # and update the new copy
@@ -801,6 +891,7 @@ def expand_vars(data, vars=os.environ):
     # make another such whose entries are expanded
     return data.__class__(expand_vars(value, vars) for value in data)
 
+
 # It Would Be Nice if we could cheaply support nested expansions:
 # ${first|${second}} Unfortunately that would require actual parsing rather
 # than a simple regexp -- regexps don't handle nesting. If we just went for
@@ -809,6 +900,7 @@ def expand_vars(data, vars=os.environ):
 # would be "fallback} and ${c". So nested variable expansions will be a future
 # enhancement, if ever.
 _placeholder = re.compile(r"\$\{(.*?)\|(.*?)\}")
+
 
 def _expand_vars_string(value, vars):
     """
@@ -829,8 +921,7 @@ def _expand_vars_string(value, vars):
     # Since we know the _placeholder regexp matched, we know it has both group
     # 1 (the variable name) and 2 (the fallback value). group(1, 2) returns
     # both. Call vars.get(variable, fallback).
-    nvalue = _placeholder.sub(lambda match: vars.get(*match.group(1, 2)),
-                              value)
+    nvalue = _placeholder.sub(lambda match: vars.get(*match.group(1, 2)), value)
 
     # But wait, we're not done yet! Let string.Template do the rest.
     try:
@@ -840,5 +931,7 @@ def _expand_vars_string(value, vars):
         raise ConfigurationError("in configuration string %r: %s" % (value, err))
     except KeyError as err:
         # undefined required variable
-        raise ConfigurationError("configuration string %r references "
-                                 "undefined variable $%s" % (value, str(err).strip("'")))
+        raise ConfigurationError(
+            "configuration string %r references "
+            "undefined variable $%s" % (value, str(err).strip("'"))
+        )

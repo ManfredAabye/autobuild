@@ -13,20 +13,22 @@ from pprint import pformat
 
 from autobuild import autobuild_base, common
 
-logger = logging.getLogger('autobuild.source_environment')
+logger = logging.getLogger("autobuild.source_environment")
+
 
 class SourceEnvError(common.AutobuildError):
     pass
+
 
 _VSxxxCOMNTOOLS_re = re.compile(r"VS(.*)COMNTOOLS$")
 _VSxxxCOMNTOOLS_st = "VS%sCOMNTOOLS"
 
 # Map of Visual Studio major version to corresponding default C++ SDK toolset version
 _VSTOOLSETS = {
-    "14": "v140", # 2015
-    "15": "v141", # 2017
-    "16": "v142", # 2019
-    "17": "v143", # 2022
+    "14": "v140",  # 2015
+    "15": "v141",  # 2017
+    "16": "v142",  # 2019
+    "17": "v143",  # 2022
 }
 
 # From VS 2017 on, we have to look for vswhere.exe at this canonical path to
@@ -35,14 +37,21 @@ _VSTOOLSETS = {
 # https://blogs.msdn.microsoft.com/heaths/2017/02/25/vswhere-available/
 # It's plausible to make these getenv() and join() calls even on a non-Windows
 # system, as long as we don't assume the resulting path actually exists.
-_VSWHERE_PATH = os.path.join(os.getenv("ProgramFiles(x86)", ""),
-                            "Microsoft Visual Studio", "Installer", "vswhere.exe")
+_VSWHERE_PATH = os.path.join(
+    os.getenv("ProgramFiles(x86)", ""),
+    "Microsoft Visual Studio",
+    "Installer",
+    "vswhere.exe",
+)
+
 
 def _available_vsvers():
     # First check all the VSxxxCOMNTOOLS environment variables.
-    candidates = set(match.group(1)
-                     for match in (_VSxxxCOMNTOOLS_re.match(k) for k in os.environ)
-                     if match)
+    candidates = set(
+        match.group(1)
+        for match in (_VSxxxCOMNTOOLS_re.match(k) for k in os.environ)
+        if match
+    )
     # Now, if there's a vswhere.exe on this system, ask it to enumerate VS
     # versions too. Use a set to unify any duplication.
     try:
@@ -50,11 +59,18 @@ def _available_vsvers():
             # Unless you add -legacy, vswhere.exe doesn't report anything
             # older than VS 2015. However:
             # Error 0x57: The "legacy" parameter cannot be specified with either the "products" or "requires" parameter
-            [_VSWHERE_PATH, '-all', # '-legacy',
-             '-products', '*',
-             '-requires', 'Microsoft.Component.MSBuild',
-             '-property', 'installationVersion'],
-            universal_newlines=True)
+            [
+                _VSWHERE_PATH,
+                "-all",  # '-legacy',
+                "-products",
+                "*",
+                "-requires",
+                "Microsoft.Component.MSBuild",
+                "-property",
+                "installationVersion",
+            ],
+            universal_newlines=True,
+        )
     except FileNotFoundError:
         # Nonexistence of the vswhere.exe utility is normal for older VS
         # installs.
@@ -62,7 +78,7 @@ def _available_vsvers():
     except subprocess.CalledProcessError as err:
         # We were able to find it, but it was unsuccessful. vswhere reports
         # important error information on stdout, captured as err.output.
-        raise SourceEnvError('{}:\n{}'.format(err, err.output))
+        raise SourceEnvError("{}:\n{}".format(err, err.output))
     else:
         # 'versions' is (e.g.):
         # 15.8.28010.2016
@@ -70,13 +86,15 @@ def _available_vsvers():
         # Have to convert from (e.g.) 15.8.28010.2016 to 158 to align with
         # AUTOBUILD_VSVER convention. In other words, match only ONE digit
         # after the dot.
-        pattern = re.compile(r'([0-9]+)\.([0-9])')
-        candidates.update(''.join(match.group(1,2))
-                          for match in (pattern.match(line)
-                                        for line in versions.splitlines())
-                          if match)
+        pattern = re.compile(r"([0-9]+)\.([0-9])")
+        candidates.update(
+            "".join(match.group(1, 2))
+            for match in (pattern.match(line) for line in versions.splitlines())
+            if match
+        )
     # Caller expects a list; sorted() is documented to return a list.
     return sorted(candidates)
+
 
 def load_vsvars(vsver):
     """
@@ -114,32 +132,50 @@ def load_vsvars(vsver):
         # allowable range of responses only to the next version up, e.g.
         # -version [15.5,16.0)
         nextver = int(major) + 1
-        version = '[{}.{},{}.0)'.format(major, minor, nextver)
+        version = "[{}.{},{}.0)".format(major, minor, nextver)
         try:
             # don't pass text=True or universal_newlines=True: we want bytes
             # to pass to json.loads()
             raw = subprocess.check_output(
-                [_VSWHERE_PATH, '-version', version, '-products', '*',
-                 '-requires', 'Microsoft.Component.MSBuild', '-utf8',
-                 '-format', 'json'], universal_newlines=True).rstrip()
+                [
+                    _VSWHERE_PATH,
+                    "-version",
+                    version,
+                    "-products",
+                    "*",
+                    "-requires",
+                    "Microsoft.Component.MSBuild",
+                    "-utf8",
+                    "-format",
+                    "json",
+                ],
+                universal_newlines=True,
+            ).rstrip()
             installs = json.loads(raw)
         except FileNotFoundError:
-            raise SourceEnvError('AUTOBUILD_VSVER={} unsupported, '
-                                 'is Visual Studio {} installed? ({} not found)'
-                                 .format(vsver, vsver, _VSWHERE_PATH))
+            raise SourceEnvError(
+                "AUTOBUILD_VSVER={} unsupported, "
+                "is Visual Studio {} installed? ({} not found)".format(
+                    vsver, vsver, _VSWHERE_PATH
+                )
+            )
         except subprocess.CalledProcessError as err:
             # Don't forget that vswhere reports error information on stdout.
-            raise SourceEnvError('AUTOBUILD_VSVER={} unsupported: {}:\n{}'
-                                 .format(vsver, err, err.output))
+            raise SourceEnvError(
+                "AUTOBUILD_VSVER={} unsupported: {}:\n{}".format(vsver, err, err.output)
+            )
         except ValueError as err:
             raise SourceEnvError("Can't parse vswhere output:\n" + raw)
             print(f"[DEBUG] ValueError: {err}")
 
         if not installs:
             # vswhere terminated with 0, yet its output is empty.
-            raise SourceEnvError('AUTOBUILD_VSVER={} unsupported, '
-                                 'is Visual Studio {} installed? (vswhere couldn\'t find)'
-                                 .format(vsver, vsver))
+            raise SourceEnvError(
+                "AUTOBUILD_VSVER={} unsupported, "
+                "is Visual Studio {} installed? (vswhere couldn't find)".format(
+                    vsver, vsver
+                )
+            )
 
         # If we get this far, 'installs' is the output of the above vswhere
         # command. BUT vswhere treats -version as a lower bound: it reports
@@ -154,12 +190,17 @@ def load_vsvars(vsver):
         # (e.g.) "2+28010", don't just pass to int() -- find every cluster of
         # decimal digits and build a list of int()s of those. Thus,
         # "15.8.2+28010.2016" becomes [15, 8, 2, 28010, 2016].
-        installs.sort(key=lambda inst:
-                      [int(found.group(0))
-                       for found in re.finditer('[0-9]+', inst['catalog']['productDisplayVersion'])])
-        where = installs[0]['installationPath']
+        installs.sort(
+            key=lambda inst: [
+                int(found.group(0))
+                for found in re.finditer(
+                    "[0-9]+", inst["catalog"]["productDisplayVersion"]
+                )
+            ]
+        )
+        where = installs[0]["installationPath"]
         # Append the rest of the directory path.
-        VCINSTALLDIR = os.path.join(where, 'VC', 'Auxiliary', 'Build')
+        VCINSTALLDIR = os.path.join(where, "VC", "Auxiliary", "Build")
 
     else:
         # Older Visual Studio versions use the VSxxxCOMNTOOLS environment
@@ -168,7 +209,7 @@ def load_vsvars(vsver):
         # care any more?)
         # If the user specifies "140" but it's not found, we'll try it twice.
         # Extra code to avoid that seems pointless: it's just a dict lookup...
-        for try_vsver in vsver, vsver[:2] + '0':
+        for try_vsver in vsver, vsver[:2] + "0":
             key = _VSxxxCOMNTOOLS_st % try_vsver
             via = key
             logger.debug("vsver %s, key %s" % (try_vsver, key))
@@ -181,11 +222,11 @@ def load_vsvars(vsver):
                 break
         else:
             candidates = _available_vsvers()
-            explain = (" (candidates: %s)" % ", ".join(candidates) if candidates
-                      else "")
-            raise SourceEnvError('AUTOBUILD_VSVER=%s unsupported, '
-                                 'is Visual Studio %s installed?%s' %
-                                 (vsver, vsver, explain))
+            explain = " (candidates: %s)" % ", ".join(candidates) if candidates else ""
+            raise SourceEnvError(
+                "AUTOBUILD_VSVER=%s unsupported, "
+                "is Visual Studio %s installed?%s" % (vsver, vsver, explain)
+            )
 
         # VSxxxCOMNTOOLS will be something like:
         # C:\Program Files (x86)\Microsoft Visual Studio 12.0\Common7\Tools\
@@ -200,8 +241,10 @@ def load_vsvars(vsver):
         # Failure to find any of these .bat files could produce really obscure
         # execution errors. Make the error messages as explicit as we can.
         if not os.path.exists(VCVarsQueryRegistry):
-            raise SourceEnvError("%s not found at %s: %s" %
-                                 (VCVarsQueryRegistry_base, key, VSxxxCOMNTOOLS))
+            raise SourceEnvError(
+                "%s not found at %s: %s"
+                % (VCVarsQueryRegistry_base, key, VSxxxCOMNTOOLS)
+            )
 
         # Found VCVarsQueryRegistry.bat, run it.
         vcvars = get_vars_from_bat(VCVarsQueryRegistry)
@@ -210,13 +253,16 @@ def load_vsvars(vsver):
         try:
             VCINSTALLDIR = vcvars["VCINSTALLDIR"]
         except KeyError:
-            raise SourceEnvError("%s did not populate VCINSTALLDIR" % VCVarsQueryRegistry)
+            raise SourceEnvError(
+                "%s did not populate VCINSTALLDIR" % VCVarsQueryRegistry
+            )
 
     vcvarsall_base = "vcvarsall.bat"
     vcvarsall = os.path.join(VCINSTALLDIR, vcvarsall_base)
     if not os.path.exists(vcvarsall):
-        raise SourceEnvError("%s not found at: %s (via %s)" %
-                             (vcvarsall_base, VCINSTALLDIR, via))
+        raise SourceEnvError(
+            "%s not found at: %s (via %s)" % (vcvarsall_base, VCINSTALLDIR, via)
+        )
 
     # vcvarsall.bat accepts a single argument: the target architecture, e.g.
     # "x86" or "x64".
@@ -224,9 +270,9 @@ def load_vsvars(vsver):
     # autobuild coding error. So would any value for that variable other than
     # what's stated below.
     arch = {
-        '32': 'x86',
-        '64': 'x64',
-        }[os.environ["AUTOBUILD_ADDRSIZE"]]
+        "32": "x86",
+        "64": "x64",
+    }[os.environ["AUTOBUILD_ADDRSIZE"]]
     vcvars = get_vars_from_bat(vcvarsall, arch)
 
     # Now weed out of vcvars anything identical to OUR environment. Retain
@@ -244,6 +290,7 @@ def load_vsvars(vsver):
 
     return vcvars
 
+
 def get_vars_from_bat(batpath, *args):
     # Invent a temp filename into which to capture our script output. Some
     # versions of vsvars32.bat emit stdout, some don't; we've been bitten both
@@ -253,9 +300,9 @@ def get_vars_from_bat(batpath, *args):
 
     # Determine python interpreter to use
     python = sys.executable
-    if getattr(sys, 'frozen', False):
+    if getattr(sys, "frozen", False):
         # running in cx_freeze'd autobuild
-        python = 'python'
+        python = "python"
 
     try:
         # Write a little temp batch file to set variables from batpath and
@@ -268,9 +315,11 @@ def get_vars_from_bat(batpath, *args):
         temp_script_content = """\
 call "%s"%s
 "%s" -c "import os, pprint; pprint.pprint(dict(os.environ))" > "%s"
-""" % (batpath, ''.join(' '+arg for arg in args), python, temp_output.name)
+""" % (batpath, "".join(" " + arg for arg in args), python, temp_output.name)
         # Specify mode="w" for text mode ("\r\n" newlines); default is binary.
-        with tempfile.NamedTemporaryFile(suffix=".cmd", delete=False, mode="w") as temp_script:
+        with tempfile.NamedTemporaryFile(
+            suffix=".cmd", delete=False, mode="w"
+        ) as temp_script:
             temp_script.write(temp_script_content)
             temp_script_name = temp_script.name
         logger.debug("wrote to %s:\n%s" % (temp_script_name, temp_script_content))
@@ -278,14 +327,15 @@ call "%s"%s
         try:
             # Run our little batch script. Intercept any stdout it produces,
             # which would confuse our invoker, who wants to parse OUR stdout.
-            cmdline = ['cmd', '/Q', '/C', temp_script_name]
+            cmdline = ["cmd", "/Q", "/C", temp_script_name]
             logger.debug(cmdline)
-            script = subprocess.Popen(cmdline, text=True,
-                                      stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            script = subprocess.Popen(
+                cmdline, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            )
             logger.debug(script.communicate()[0].rstrip())
             rc = script.wait()
             if rc != 0:
-                raise SourceEnvError("%s failed with rc %s" % (' '.join(cmdline), rc))
+                raise SourceEnvError("%s failed with rc %s" % (" ".join(cmdline), rc))
 
         finally:
             # Whether or not the temporary script file worked, clean it up.
@@ -315,8 +365,11 @@ call "%s"%s
 def cygpath(*args):
     """run cygpath with specified command-line args, returning its output"""
     cmdline = ["cygpath"] + list(args)
-    stdout = subprocess.Popen(cmdline, stdout=subprocess.PIPE, universal_newlines=True) \
-                       .communicate()[0].rstrip()
+    stdout = (
+        subprocess.Popen(cmdline, stdout=subprocess.PIPE, universal_newlines=True)
+        .communicate()[0]
+        .rstrip()
+    )
     logger.debug("%s => '%s'" % (cmdline, stdout))
     return stdout
 
@@ -414,6 +467,7 @@ windows_template = """
     fi
 """
 
+
 def do_source_environment(args):
     # SL-452: autobuild source_environment now takes a positional argument
     # 'varsfile' indicating the script in which we'll find essential
@@ -433,15 +487,16 @@ https://bitbucket.org/lindenlab/build-variables/src/tip/variables)
 will be emitted. This could cause your build to fail for lack of LL_BUILD or
 similar.""")
 
-    exports, vars, vsvars = \
-        internal_source_environment(args.configurations, args.varsfile)
+    exports, vars, vsvars = internal_source_environment(
+        args.configurations, args.varsfile
+    )
 
     var_mapping = {}
 
     if not common.is_system_windows():
         template = environment_template
     else:
-        template = '\n'.join((environment_template, windows_template))
+        template = "\n".join((environment_template, windows_template))
 
         # We don't know which environment variables might be modified by
         # vsvars32.bat, but one of them is likely to be PATH. Treat PATH
@@ -473,8 +528,11 @@ similar.""")
                 # is compared to the live PATH so that we can get the set difference.
                 # This solves the problem of needing to dedupe the path in package
                 # buildscripts.
-                dedup(cygpath("-u", percents.sub(r"${\1}", p.strip('"')))
-                      for p in vsvars_path.split(';') if p not in existing_path)
+                dedup(
+                    cygpath("-u", percents.sub(r"${\1}", p.strip('"')))
+                    for p in vsvars_path.split(";")
+                    if p not in existing_path
+                )
             )
             vsvars["PATH"] = vsvars_path + ":$PATH"
 
@@ -482,7 +540,7 @@ similar.""")
         # A pathname ending with a backslash (as many do on Windows), when
         # embedded in quotes in a bash script, might inadvertently escape the
         # close quote. Remove all trailing backslashes.
-        vsvarslist = [(k, v.rstrip('\\')) for (k, v) in vsvars.items()]
+        vsvarslist = [(k, v.rstrip("\\")) for (k, v) in vsvars.items()]
 
         # may as well sort by keys
         vsvarslist.sort()
@@ -491,16 +549,18 @@ similar.""")
         # environment variables, don't try to name them individually in the
         # template. Instead, bundle all relevant export statements into a
         # single substitution.
-        var_mapping["vsvars"] = '\n'.join(
+        var_mapping["vsvars"] = "\n".join(
             ('        export %s="%s"' % varval for varval in vsvarslist)
         )
 
     # Before expanding template with var_mapping, finalize the 'exports' and
     # 'vars' dicts into var_mapping["vars"] as promised above.
-    var_mapping["vars"] = '\n'.join(itertools.chain(
-        (("    export %s='%s'" % (k, v)) for k, v in exports.items()),
-        (("    %s='%s'" % (k, v)) for k, v in vars.items()),
-        ))
+    var_mapping["vars"] = "\n".join(
+        itertools.chain(
+            (("    export %s='%s'" % (k, v)) for k, v in exports.items()),
+            (("    %s='%s'" % (k, v)) for k, v in vars.items()),
+        )
+    )
 
     # Write to stdout buffer to avoid writing CRLF line endings
     sys.stdout.buffer.write((template % var_mapping).encode("utf-8"))
@@ -533,17 +593,19 @@ def internal_source_environment(configurations, varsfile):
     """
     init_exports = {}
     if not common.is_system_windows():
-        vsver = None                    # N/A
+        vsver = None  # N/A
     else:
         try:
-            vsver = os.environ['AUTOBUILD_VSVER']
+            vsver = os.environ["AUTOBUILD_VSVER"]
         except KeyError:
             # try to figure out most recent Visual Studio version
             try:
                 vsver = _available_vsvers()[-1]
             except IndexError:
-                logger.warning("No Visual Studio install detected -- "
-                               "certain configuration variables will not be available")
+                logger.warning(
+                    "No Visual Studio install detected -- "
+                    "certain configuration variables will not be available"
+                )
                 vsver = None
             else:
                 # SL-17226: It's useful to set AUTOBUILD_VSVER for subprocesses.
@@ -554,9 +616,9 @@ def internal_source_environment(configurations, varsfile):
                 # That isolates build products from different Visual Studio
                 # versions (desirable) - but would we really want to distinguish
                 # build-vc161-64 from build-vc163-64?
-                os.environ['AUTOBUILD_VSVER'] = vsver[:2] + '0'
+                os.environ["AUTOBUILD_VSVER"] = vsver[:2] + "0"
         # On Windows, always export AUTOBUILD_VSVER, inherited or deduced.
-        init_exports['AUTOBUILD_VSVER'] = os.environ['AUTOBUILD_VSVER']
+        init_exports["AUTOBUILD_VSVER"] = os.environ["AUTOBUILD_VSVER"]
 
     # OPEN-259: it turns out to be important that if AUTOBUILD is already set
     # in the environment, we should LEAVE IT ALONE. So if it exists, use the
@@ -571,15 +633,16 @@ def internal_source_environment(configurations, varsfile):
     # before expanding environment_template populates 'exports' and 'vars'
     # into var_mapping["vars"]. We defer it that long so that conditional
     # logic below can, if desired, add to either 'exports' or 'vars' first.
-    exports = dict(init_exports,
+    exports = dict(
+        init_exports,
         AUTOBUILD=AUTOBUILD,
         AUTOBUILD_VERSION_STRING=common.AUTOBUILD_VERSION_STRING,
         AUTOBUILD_PLATFORM=common.get_current_platform(),
-        )
+    )
     vars = dict(
-##      MAKEFLAGS="",
-##      DISTCC_HOSTS="",
-        )
+        ##      MAKEFLAGS="",
+        ##      DISTCC_HOSTS="",
+    )
     vsvars = {}
 
     # varsfile could have been set either of two ways above, check again
@@ -598,7 +661,7 @@ def internal_source_environment(configurations, varsfile):
             with open(varsfile) as vf:
                 for linen0, line in enumerate(vf):
                     # skip empty lines and comment lines
-                    if line == '\n' or line.startswith('#'):
+                    if line == "\n" or line.startswith("#"):
                         continue
                     match = assign_line.match(line.rstrip())
                     if not match:
@@ -609,28 +672,31 @@ def internal_source_environment(configurations, varsfile):
                         # third-party packages was built without essential
                         # compiler switches.
                         raise SourceEnvError(
-                            "%s(%s): malformed variable assignment:\n%s" %
-                            (varsfile, linen0+1, line.rstrip()))
-                    var, value = match.group(1,2)
+                            "%s(%s): malformed variable assignment:\n%s"
+                            % (varsfile, linen0 + 1, line.rstrip())
+                        )
+                    var, value = match.group(1, 2)
                     try:
                         # Rely on the similarity between string.Template
                         # subtitution syntax and bash substitution syntax.
                         vfvars[var] = string.Template(value).substitute(vfvars)
                     except ValueError as err:
                         raise SourceEnvError(
-                            "%s(%s): bad substitution syntax: %s\n%s" %
-                            (varsfile, linen0+1, err, line.rstrip()))
+                            "%s(%s): bad substitution syntax: %s\n%s"
+                            % (varsfile, linen0 + 1, err, line.rstrip())
+                        )
                     except KeyError as err:
                         raise SourceEnvError(
-                            "%s(%s): undefined variable %s:\n%s" %
-                            (varsfile, linen0+1, err, line.rstrip()))
+                            "%s(%s): undefined variable %s:\n%s"
+                            % (varsfile, linen0 + 1, err, line.rstrip())
+                        )
         except (IOError, OSError) as err:
             # Even though it's only a warning to fail to specify varsfile,
             # it's a fatal error to specify one that doesn't exist or can't be
             # read.
             raise SourceEnvError(
-                "%s: can't read '%s': %s" %
-                (err.__class__.__name__, varsfile, err))
+                "%s: can't read '%s': %s" % (err.__class__.__name__, varsfile, err)
+            )
 
         # Here vfvars contains all the variables set in varsfile. Before
         # passing them along to the 'vars' dict, make a convenience pass over
@@ -644,23 +710,24 @@ def internal_source_environment(configurations, varsfile):
             # enumerate common.PLATFORM_WINDOWS, common.PLATFORM_WINDOWS64,
             # etc. just to blur the distinction between them again.
             platform = dict(
-                win32 ="WINDOWS",
+                win32="WINDOWS",
                 cygwin="WINDOWS",
                 darwin="DARWIN",
                 linux="LINUX",
                 linux2="LINUX",
-                )[sys.platform]
+            )[sys.platform]
         except KeyError:
-            logger.warning("Unsupported platform %s: no short names provided" %
-                           sys.platform)
+            logger.warning(
+                "Unsupported platform %s: no short names provided" % sys.platform
+            )
         else:
-            platform_re = re.compile(r'(.*_BUILD)_%s(.*)$' % platform)
+            platform_re = re.compile(r"(.*_BUILD)_%s(.*)$" % platform)
             # use items() rather than iteritems(): we're modifying as we iterate
             for var, value in list(vfvars.items()):
                 match = platform_re.match(var)
                 if match:
                     # add a shorthand variable that excludes _PLATFORM
-                    vfvars[''.join(match.group(1,2))] = value
+                    vfvars["".join(match.group(1, 2))] = value
 
         # If caller specified configuration, provide shorthand vars for it.
         # If nothing was specified, configurations will be empty; if something
@@ -668,15 +735,16 @@ def internal_source_environment(configurations, varsfile):
         if configurations:
             configuration = configurations[0].upper()
             if configurations[1:]:
-                logger.warning("Ignoring extra configurations %s" %
-                               ", ".join(configurations[1:]))
-            configuration_re = re.compile(r'(.*_BUILD)_%s(.*)$' % configuration)
+                logger.warning(
+                    "Ignoring extra configurations %s" % ", ".join(configurations[1:])
+                )
+            configuration_re = re.compile(r"(.*_BUILD)_%s(.*)$" % configuration)
             # use items() because we're modifying as we iterate
             for var, value in list(vfvars.items()):
                 match = configuration_re.match(var)
                 if match:
                     # add a shorthand variable that excludes _CONFIGURATION
-                    vfvars[''.join(match.group(1,2))] = value
+                    vfvars["".join(match.group(1, 2))] = value
 
         # We've been keeping varsfile variables separate so we can make the
         # above convenience passes through them without accidentally matching
@@ -687,16 +755,18 @@ def internal_source_environment(configurations, varsfile):
     # an autobuild coding error. So would any value for that variable
     # other than what's stated below.
     exports["AUTOBUILD_CONFIGURE_ARCH"] = {
-        '32': 'i386',
-        '64': 'x86_64',
-        }[os.environ["AUTOBUILD_ADDRSIZE"]]
+        "32": "i386",
+        "64": "x86_64",
+    }[os.environ["AUTOBUILD_ADDRSIZE"]]
 
     if common.is_system_windows():
         try:
-            use_ib = int(os.environ['USE_INCREDIBUILD'])
+            use_ib = int(os.environ["USE_INCREDIBUILD"])
         except ValueError:
-            logger.warning("USE_INCREDIBUILD environment variable contained garbage %r "
-                           "(expected 0 or 1)" % os.environ['USE_INCREDIBUILD'])
+            logger.warning(
+                "USE_INCREDIBUILD environment variable contained garbage %r "
+                "(expected 0 or 1)" % os.environ["USE_INCREDIBUILD"]
+            )
             use_ib = 0
         except KeyError:
             # We no longer require Incredibuild for Windows builds. Therefore,
@@ -711,9 +781,9 @@ def internal_source_environment(configurations, varsfile):
         # an autobuild coding error. So would any value for that variable
         # other than what's stated below.
         exports["AUTOBUILD_WIN_VSPLATFORM"] = {
-            '32': 'Win32',
-            '64': 'x64',
-            }[os.environ["AUTOBUILD_ADDRSIZE"]]
+            "32": "Win32",
+            "64": "x64",
+        }[os.environ["AUTOBUILD_ADDRSIZE"]]
 
         if vsver:
             # When one of our build-cmd.sh scripts invokes CMake on Windows, it's
@@ -734,12 +804,12 @@ def internal_source_environment(configurations, varsfile):
                 # vswhere might have reported (e.g.) "158" or "161". Ignore
                 # the minor version when choosing the CMake generator.
                 AUTOBUILD_WIN_CMAKE_GEN = {
-                    '12': "Visual Studio 12",
-                    '14': "Visual Studio 14",
-                    '15': "Visual Studio 15",
-                    '16': "Visual Studio 16",
-                    '17': "Visual Studio 17 2022",
-                    }[vsver[:-1]]
+                    "12": "Visual Studio 12",
+                    "14": "Visual Studio 14",
+                    "15": "Visual Studio 15",
+                    "16": "Visual Studio 16",
+                    "17": "Visual Studio 17 2022",
+                }[vsver[:-1]]
             except KeyError:
                 # We don't have a specific mapping for this value of vsver. Take
                 # a wild guess. If we guess wrong, CMake will complain, and the
@@ -750,7 +820,7 @@ def internal_source_environment(configurations, varsfile):
                 AUTOBUILD_WIN_CMAKE_GEN = "Visual Studio %s" % (vsver[:-1])
             # Of course CMake also needs to know bit width :-P
             # Or at least it used to, until VS 2019.
-            if os.environ["AUTOBUILD_ADDRSIZE"] == "64" and vsver < '160':
+            if os.environ["AUTOBUILD_ADDRSIZE"] == "64" and vsver < "160":
                 AUTOBUILD_WIN_CMAKE_GEN += " Win64"
             # cmake -G "$AUTOBUILD_WIN_CMAKE_GEN"
             exports["AUTOBUILD_WIN_CMAKE_GEN"] = AUTOBUILD_WIN_CMAKE_GEN
@@ -759,9 +829,13 @@ def internal_source_environment(configurations, varsfile):
                 # Provide a suggested C++ SDK version for build scripts to
                 # use. Just as with AUTOBUILD_WIN_CMAKE_GEN above, use only
                 # the first two digits of vsver to select it.
-                exports["AUTOBUILD_WIN_VSTOOLSET"] = os.environ.get("AUTOBUILD_WIN_VSTOOLSET", _VSTOOLSETS[vsver[:-1]])
+                exports["AUTOBUILD_WIN_VSTOOLSET"] = os.environ.get(
+                    "AUTOBUILD_WIN_VSTOOLSET", _VSTOOLSETS[vsver[:-1]]
+                )
             except KeyError:
-                logger.warning(f"Unable to determine a suggested AUTOBUILD_WIN_VSTOOLSET for vsver {vsver}")
+                logger.warning(
+                    f"Unable to determine a suggested AUTOBUILD_WIN_VSTOOLSET for vsver {vsver}"
+                )
 
             # load vsvars32.bat variables
             vsvars = load_vsvars(vsver)
@@ -797,7 +871,8 @@ def get_enriched_environment(configuration):
     result = common.get_autobuild_environment()
     exports, vars, vsvars = internal_source_environment(
         [configuration] if configuration else [],
-        os.environ.get("AUTOBUILD_VARIABLES_FILE"))
+        os.environ.get("AUTOBUILD_VARIABLES_FILE"),
+    )
     result.update(exports)
     result.update(vars)
     result.update(vsvars)
@@ -810,34 +885,51 @@ def dedup(iterable):
 
 class AutobuildTool(autobuild_base.AutobuildBase):
     def get_details(self):
-        return dict(name=self.name_from_file(__file__),
-                    description='Prints out the shell environment Autobuild-based buildscripts to use (by calling \'eval\').')
+        return dict(
+            name=self.name_from_file(__file__),
+            description="Prints out the shell environment Autobuild-based buildscripts to use (by calling 'eval').",
+        )
 
     # called by autobuild to add help and options to the autobuild parser, and
     # by standalone code to set up argparse
     def register(self, parser):
-        parser.description='prints out the shell environment for Autobuild-based ' \
-                           'buildscripts to use ' \
-                           '(by calling \'eval\' i.e. eval "$(autobuild source_environment)").'
-        parser.add_argument('-V', '--version', action='version',
-                            version='source_environment tool module %s' %
-                            common.AUTOBUILD_VERSION_STRING)
+        parser.description = (
+            "prints out the shell environment for Autobuild-based "
+            "buildscripts to use "
+            "(by calling 'eval' i.e. eval \"$(autobuild source_environment)\")."
+        )
+        parser.add_argument(
+            "-V",
+            "--version",
+            action="version",
+            version="source_environment tool module %s"
+            % common.AUTOBUILD_VERSION_STRING,
+        )
         # we use action="append" not because we want to support multiple -c
         # arguments, but to unify the processing between supplied -c and
         # configurations_from_environment(), which produces a list.
-        parser.add_argument('--configuration', '-c', nargs='?',
-                            action="append", dest='configurations',
-                            help="emit shorthand variables for a specific build configuration\n"
-                            "(may be specified in $AUTOBUILD_CONFIGURATION; "
-                            "multiple values make no sense here)",
-                            metavar='CONFIGURATION',
-                            default=self.configurations_from_environment())
-        parser.add_argument("varsfile", nargs="?", default=None,
-                            help="Local sh script in which to find essential environment "
-                            "variable settings (default from $AUTOBUILD_VARIABLES_FILE), "
-                            "e.g. a checkout of "
-                            "https://bitbucket.org/lindenlab/viewer-build-variables/"
-                            "src/tip/variables")
+        parser.add_argument(
+            "--configuration",
+            "-c",
+            nargs="?",
+            action="append",
+            dest="configurations",
+            help="emit shorthand variables for a specific build configuration\n"
+            "(may be specified in $AUTOBUILD_CONFIGURATION; "
+            "multiple values make no sense here)",
+            metavar="CONFIGURATION",
+            default=self.configurations_from_environment(),
+        )
+        parser.add_argument(
+            "varsfile",
+            nargs="?",
+            default=None,
+            help="Local sh script in which to find essential environment "
+            "variable settings (default from $AUTOBUILD_VARIABLES_FILE), "
+            "e.g. a checkout of "
+            "https://bitbucket.org/lindenlab/viewer-build-variables/"
+            "src/tip/variables",
+        )
 
     def run(self, args):
         do_source_environment(args)
