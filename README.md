@@ -1,7 +1,5 @@
 # Autobuild
 
-[![codecov](https://codecov.io/gh/ManfredAabye/autobuild/branch/main/graph/badge.svg?token=8GBLMAFDIN)](https://codecov.io/gh/ManfredAabye/autobuild)
-
 **Autobuild** is a framework for building packages and for managing the
 dependencies of a package on other packages. It provides a common
 interface to configuring and building any package, but it is not a
