@@ -1,0 +1,65 @@
+name: Build Autobuild Package
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Python package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Upgrade pip
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade setuptools
+          python -m pip install --upgrade setuptools_scm
+          python -m pip install --upgrade build
+
+      - name: Install dependencies
+        run: |
+          python -m pip install "llsd>=1.2.4"
+          python -m pip install pydot
+          python -m pip install "pyzstd==0.18.0"
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install pytest pytest-cov
+
+      - name: Run tests
+        run: |
+          python -m pytest
+
+      - name: Build source distribution and wheel
+        run: |
+          python -m build
+
+      - name: Check generated packages
+        run: |
+          python -m pip install --upgrade twine
+          python -m twine check dist/*
+
+      - name: Display generated packages
+        run: |
+          echo "Generated packages:"
+          ls -lah dist/
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: autobuild-package
+          path: dist/
+          if-no-files-found: error
