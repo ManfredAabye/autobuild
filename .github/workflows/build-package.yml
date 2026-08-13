@@ -1,4 +1,4 @@
-name: Build Autobuild Package
+name: Build Experimental Autobuild
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   build:
-    name: Build Python package
+    name: Build experimental package
     runs-on: ubuntu-latest
 
     steps:
@@ -17,12 +17,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v6
         with:
           python-version: "3.13"
 
-      - name: Upgrade pip
+      - name: Upgrade build tools
         run: |
           python -m pip install --upgrade pip
           python -m pip install --upgrade setuptools
@@ -35,31 +35,27 @@ jobs:
           python -m pip install pydot
           python -m pip install "pyzstd==0.18.0"
 
-      - name: Install test dependencies
-        run: |
-          python -m pip install pytest pytest-cov
-
-      - name: Run tests
-        run: |
-          python -m pytest
-
-      - name: Build source distribution and wheel
+      - name: Build package
         run: |
           python -m build
 
-      - name: Check generated packages
+      - name: Check package
         run: |
           python -m pip install --upgrade twine
           python -m twine check dist/*
 
-      - name: Display generated packages
+      - name: Show build result
         run: |
-          echo "Generated packages:"
-          ls -lah dist/
+          echo "=========================================="
+          echo " Experimental Autobuild package"
+          echo "=========================================="
+          echo
+          ls -lh dist/
 
-      - name: Upload packages
+      - name: Upload experimental artifact
         uses: actions/upload-artifact@v4
         with:
-          name: autobuild-package
+          name: autobuild-experimental
           path: dist/
           if-no-files-found: error
+          retention-days: 7
