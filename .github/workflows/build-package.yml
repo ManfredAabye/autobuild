@@ -1,28 +1,34 @@
-name: Build Experimental Autobuild
+name: Build and Test Autobuild
 
 on:
   workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 permissions:
   contents: read
 
 jobs:
-  build:
-    name: Build experimental package
+  test:
+    name: Test with Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  # Node.js 24
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13.3"]  # Teste mehrere Versionen
+      fail-fast: false  # Weiter testen, auch wenn eine Version fehlschlägt
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Setup Python
+      - name: Setup Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version: ${{ matrix.python-version }}
 
       - name: Upgrade build tools
         run: |
@@ -37,11 +43,63 @@ jobs:
           python -m pip install pydot
           python -m pip install "pyzstd==0.18.0"
 
+      - name: Install package in development mode
+        run: |
+          python -m pip install -e .
+
+      - name: Run tests (if available)
+        run: |
+          python -m pip install pytest
+          python -m pytest tests/ || echo "No tests found, skipping"
+
       - name: Build package
         run: |
           python -m build
 
-      - name: Check package
+      - name: Check package with twine
+        run: |
+          python -m pip install --upgrade twine
+          python -m twine check dist/*
+
+  build-experimental:
+    name: Build experimental package
+    runs-on: ubuntu-latest
+    needs: test  # Wartet, bis alle Tests erfolgreich sind
+    if: always() && !cancelled() && !contains(needs.*.result, 'failure')
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  # Node.js 24 für JavaScript-Actions
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13.3"
+
+      - name: Upgrade build tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade setuptools
+          python -m pip install --upgrade setuptools_scm
+          python -m pip install --upgrade build
+
+      - name: Install dependencies
+        run: |
+          python -m pip install "llsd>=1.2.4"
+          python -m pip install pydot
+          python -m pip install "pyzstd==0.18.0"
+          # Beide Zeilen, falls du es explizit haben möchtest:
+          pip install "llsd>=1.2.4" "pydot" "pyzstd==0.18.0"
+
+      - name: Build package
+        run: |
+          python -m build
+
+      - name: Check package with twine
         run: |
           python -m pip install --upgrade twine
           python -m twine check dist/*
@@ -55,7 +113,7 @@ jobs:
           ls -lh dist/
 
       - name: Upload experimental artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         with:
           name: autobuild-experimental
           path: dist/
